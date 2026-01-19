@@ -1,4 +1,4 @@
-import { useYachtStore, HullType, TurbineStyle } from '@/state/useYachtStore'
+import { useYachtStore, HullType } from '@/state/useYachtStore'
 
 export function BuilderPanel() {
   const { currentYacht, setHull, setTurbine, setSolar, stats } = useYachtStore()

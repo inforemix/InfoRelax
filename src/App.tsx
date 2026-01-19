@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment, Sky, Stars } from '@react-three/drei'
+import { OrbitControls, Sky, Stars } from '@react-three/drei'
 import { Suspense, useState } from 'react'
 import { Leva } from 'leva'
 

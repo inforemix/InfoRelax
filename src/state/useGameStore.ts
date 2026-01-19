@@ -19,9 +19,10 @@ export interface EnergyState {
 
 export interface PlayerState {
   position: [number, number, number]
-  rotation: number         // Y-axis rotation
+  rotation: number         // Y-axis rotation (radians)
   speed: number            // knots
   throttle: number         // 0-100%
+  steering: number         // -1 to 1 (left to right)
 }
 
 interface GameState {
@@ -45,8 +46,10 @@ interface GameState {
   setWeather: (weather: Weather) => void
   setWind: (wind: Partial<WindState>) => void
   setThrottle: (throttle: number) => void
+  setSteering: (steering: number) => void
+  updatePlayerPosition: (delta: number, maxSpeed: number, turnRate: number) => void
   updateEnergy: (delta: number) => void
-  tick: (delta: number) => void
+  tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
 }
 
 // Weather presets
@@ -86,6 +89,7 @@ export const useGameStore = create<GameState>()(
       rotation: 0,
       speed: 0,
       throttle: 0,
+      steering: 0,
     },
     
     // Actions
@@ -115,6 +119,37 @@ export const useGameStore = create<GameState>()(
     setThrottle: (throttle) => {
       set((state) => {
         state.player.throttle = Math.max(0, Math.min(100, throttle))
+      })
+    },
+
+    setSteering: (steering) => {
+      set((state) => {
+        state.player.steering = Math.max(-1, Math.min(1, steering))
+      })
+    },
+
+    updatePlayerPosition: (delta, maxSpeed, turnRate) => {
+      set((state) => {
+        const { player } = state
+
+        // Calculate current speed based on throttle (knots to m/s: 1 knot ≈ 0.514 m/s)
+        const targetSpeed = (player.throttle / 100) * maxSpeed
+        // Gradually accelerate/decelerate
+        player.speed = player.speed + (targetSpeed - player.speed) * Math.min(1, delta * 2)
+
+        // Apply steering (only when moving)
+        if (Math.abs(player.speed) > 0.1) {
+          const turnAmount = player.steering * turnRate * delta * (player.speed / maxSpeed)
+          player.rotation += turnAmount
+        }
+
+        // Convert speed from knots to m/s for position update
+        const speedMs = player.speed * 0.514
+
+        // Update position based on rotation and speed
+        // Forward is -Z in Three.js convention
+        player.position[0] += Math.sin(player.rotation) * speedMs * delta
+        player.position[2] += Math.cos(player.rotation) * speedMs * delta
       })
     },
     
@@ -150,22 +185,25 @@ export const useGameStore = create<GameState>()(
       })
     },
     
-    tick: (delta) => {
+    tick: (delta, maxSpeed = 15, turnRate = 1) => {
+      // Update player position first
+      get().updatePlayerPosition(delta, maxSpeed, turnRate)
+
       set((state) => {
         // Advance game time
         state.gameTime += delta
-        
+
         // Slowly cycle time of day (1 game day = 20 real minutes)
         state.timeOfDay = (state.timeOfDay + delta / 1200) % 1
-        
+
         // Random wind gusts
         const gustOffset = (Math.random() - 0.5) * 2 * state.wind.gustFactor
         state.wind.speed = Math.max(0, state.wind.speed + gustOffset * delta)
-        
+
         // Slowly drift wind direction
         state.wind.direction = (state.wind.direction + (Math.random() - 0.5) * 2 * delta) % 360
       })
-      
+
       // Update energy calculations
       get().updateEnergy(delta)
     },
