@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* E-Cat Design Colors */
+  --color-hull-white: #F8FAFC;
+  --color-ocean-deep: #0C4A6E;
+  --color-ocean-mid: #0E7490;
+  --color-cyan-accent: #06B6D4;
+  --color-sunset-orange: #F97316;
+  --color-sunset-gold: #FBBF24;
+  --color-turbine-purple: #8B5CF6;
+  --color-speaker-gold: #D4A574;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-cyan-accent);
+  border-radius: 4px;
+}
+
+/* Glass effect for UI panels */
+.glass {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* HUD text glow */
+.hud-glow {
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+/* Power flow animation */
+@keyframes power-flow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.power-flow-line {
+  stroke-dasharray: 5 5;
+  animation: power-flow 1s linear infinite;
+}
+
+/* Kaleidoscope canvas cursor */
+.kaleidoscope-canvas {
+  cursor: crosshair;
+}
+
+/* Slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-cyan-accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Loading animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
