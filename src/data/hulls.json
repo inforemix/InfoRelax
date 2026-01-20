@@ -1,0 +1,173 @@
+{
+  "presets": [
+    {
+      "id": "starter-cat",
+      "name": "E-Cat Starter",
+      "description": "Balanced catamaran for beginners",
+      "unlockCost": 0,
+      "config": {
+        "type": "catamaran",
+        "length": 12,
+        "beam": 4,
+        "draft": 0.8,
+        "bowShape": "piercing"
+      },
+      "tags": ["starter", "balanced"]
+    },
+    {
+      "id": "speed-mono",
+      "name": "Racer Mono",
+      "description": "Fast monohull for racing",
+      "unlockCost": 0,
+      "config": {
+        "type": "monohull",
+        "length": 10,
+        "beam": 2.5,
+        "draft": 1.2,
+        "bowShape": "piercing"
+      },
+      "tags": ["speed", "racing"]
+    },
+    {
+      "id": "stable-tri",
+      "name": "Cruiser Tri",
+      "description": "Ultra-stable trimaran for long voyages",
+      "unlockCost": 500,
+      "config": {
+        "type": "trimaran",
+        "length": 14,
+        "beam": 5,
+        "draft": 0.7,
+        "bowShape": "flared"
+      },
+      "tags": ["stability", "cruising"]
+    },
+    {
+      "id": "efficient-cat",
+      "name": "Eco Cat",
+      "description": "Efficiency-focused catamaran with bulbous bow",
+      "unlockCost": 200,
+      "config": {
+        "type": "catamaran",
+        "length": 15,
+        "beam": 4.5,
+        "draft": 0.9,
+        "bowShape": "bulbous"
+      },
+      "tags": ["efficiency", "eco"]
+    },
+    {
+      "id": "compact-mono",
+      "name": "Day Sailor",
+      "description": "Compact monohull for day trips",
+      "unlockCost": 0,
+      "config": {
+        "type": "monohull",
+        "length": 8,
+        "beam": 3,
+        "draft": 0.6,
+        "bowShape": "flared"
+      },
+      "tags": ["compact", "beginner"]
+    },
+    {
+      "id": "wave-tri",
+      "name": "Wave Rider",
+      "description": "Trimaran designed for rough seas",
+      "unlockCost": 800,
+      "config": {
+        "type": "trimaran",
+        "length": 16,
+        "beam": 5.5,
+        "draft": 1.0,
+        "bowShape": "flared"
+      },
+      "tags": ["waves", "offshore"]
+    },
+    {
+      "id": "foiling-cat",
+      "name": "Foiler X",
+      "description": "High-speed hydrofoil catamaran",
+      "unlockCost": 5000,
+      "config": {
+        "type": "hydrofoil",
+        "length": 12,
+        "beam": 4,
+        "draft": 1.5,
+        "bowShape": "piercing"
+      },
+      "tags": ["speed", "advanced", "hydrofoil"]
+    },
+    {
+      "id": "mega-cat",
+      "name": "Party Barge",
+      "description": "Extra-large catamaran for DJ booth and parties",
+      "unlockCost": 1500,
+      "config": {
+        "type": "catamaran",
+        "length": 20,
+        "beam": 6,
+        "draft": 1.2,
+        "bowShape": "bulbous"
+      },
+      "tags": ["party", "large", "modules"]
+    }
+  ],
+  "hullTypeInfo": {
+    "monohull": {
+      "name": "Monohull",
+      "description": "Traditional single-hull design. Simple and maneuverable.",
+      "pros": ["Easy to handle", "Good upwind performance", "Lower cost"],
+      "cons": ["Less deck space", "More heel angle", "Less stability"],
+      "dragModifier": 1.0,
+      "stabilityModifier": 0.8
+    },
+    "catamaran": {
+      "name": "Catamaran",
+      "description": "Twin-hull design offering stability and speed.",
+      "pros": ["Excellent stability", "Large deck area", "Shallow draft"],
+      "cons": ["Wider turning radius", "Bridge deck clearance", "Bridging loads in waves"],
+      "dragModifier": 0.85,
+      "stabilityModifier": 1.2
+    },
+    "trimaran": {
+      "name": "Trimaran",
+      "description": "Three-hull design combining speed with stability.",
+      "pros": ["Very stable", "Excellent speed potential", "Light weight"],
+      "cons": ["Complex structure", "Wide beam", "Ama vulnerability"],
+      "dragModifier": 0.75,
+      "stabilityModifier": 1.4
+    },
+    "hydrofoil": {
+      "name": "Hydrofoil",
+      "description": "Advanced design that lifts above water at speed.",
+      "pros": ["Exceptional speed", "Smooth ride", "Low drag at speed"],
+      "cons": ["Complex systems", "High skill required", "Expensive"],
+      "dragModifier": 0.5,
+      "stabilityModifier": 1.0
+    }
+  },
+  "bowShapeInfo": {
+    "piercing": {
+      "name": "Piercing Bow",
+      "description": "Sharp, narrow bow for cutting through waves.",
+      "speedBonus": 1.1,
+      "waveHandling": 0.8,
+      "efficiency": 1.0
+    },
+    "flared": {
+      "name": "Flared Bow",
+      "description": "Wide, flared bow for deflecting waves.",
+      "speedBonus": 0.95,
+      "waveHandling": 1.2,
+      "efficiency": 0.95
+    },
+    "bulbous": {
+      "name": "Bulbous Bow",
+      "description": "Underwater bulb for improved hydrodynamic efficiency.",
+      "speedBonus": 1.0,
+      "waveHandling": 0.9,
+      "efficiency": 1.15
+    }
+  }
+}
