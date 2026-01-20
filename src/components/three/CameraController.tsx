@@ -11,11 +11,12 @@ export function CameraController() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const { camera } = useThree()
 
-  const { player, cameraMode, toggleCameraMode } = useGameStore()
+  const { player, cameraMode, gameMode, toggleCameraMode } = useGameStore()
   const keys = useKeyboard()
 
   // Track if we need to reset camera
   const shouldReset = useRef(false)
+  const lastGameMode = useRef(gameMode)
 
   // Handle V key for camera mode toggle
   useEffect(() => {
@@ -39,6 +40,29 @@ export function CameraController() {
       player.position[1],
       player.position[2]
     )
+
+    // Handle game mode changes - reset camera when switching to build mode
+    if (gameMode !== lastGameMode.current) {
+      lastGameMode.current = gameMode
+      if (gameMode === 'build') {
+        // Position camera for build mode preview (right side of screen)
+        const buildCameraPos = new THREE.Vector3(
+          yachtPos.x + 15,
+          yachtPos.y + 12,
+          yachtPos.z + 10
+        )
+        camera.position.copy(buildCameraPos)
+        controlsRef.current.target.copy(yachtPos)
+        controlsRef.current.update()
+      }
+    }
+
+    // Build mode: fixed camera angle for preview panel
+    if (gameMode === 'build') {
+      controlsRef.current.enabled = true
+      controlsRef.current.target.lerp(yachtPos, 0.1)
+      return
+    }
 
     if (cameraMode === 'first-person') {
       // First-person: disable controls, position camera at helm

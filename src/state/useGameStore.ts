@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 
 export type Weather = 'clear' | 'cloudy' | 'trade-winds' | 'storm' | 'doldrums'
 export type CameraMode = 'third-person' | 'first-person'
+export type GameMode = 'sail' | 'build'
 
 export interface WindState {
   direction: number    // 0-360 degrees (0 = North)
@@ -35,8 +36,9 @@ interface GameState {
   weather: Weather
   wind: WindState
 
-  // Camera
+  // Camera & Mode
   cameraMode: CameraMode
+  gameMode: GameMode
 
   // Energy
   energy: EnergyState
@@ -53,6 +55,7 @@ interface GameState {
   setSteering: (steering: number) => void
   setCameraMode: (mode: CameraMode) => void
   toggleCameraMode: () => void
+  setGameMode: (mode: GameMode) => void
   updatePlayerPosition: (delta: number, maxSpeed: number, turnRate: number) => void
   updateEnergy: (delta: number) => void
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
@@ -81,7 +84,8 @@ export const useGameStore = create<GameState>()(
     },
 
     cameraMode: 'third-person',
-    
+    gameMode: 'sail',
+
     energy: {
       turbineOutput: 0,
       solarOutput: 0,
@@ -145,6 +149,12 @@ export const useGameStore = create<GameState>()(
     toggleCameraMode: () => {
       set((state) => {
         state.cameraMode = state.cameraMode === 'third-person' ? 'first-person' : 'third-person'
+      })
+    },
+
+    setGameMode: (mode) => {
+      set((state) => {
+        state.gameMode = mode
       })
     },
 

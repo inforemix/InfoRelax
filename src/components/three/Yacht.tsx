@@ -7,52 +7,10 @@ import { useYachtStore } from '@/state/useYachtStore'
 import { useGameStore } from '@/state/useGameStore'
 import { useKeyboard } from '@/utils/useKeyboard'
 import { ParametricHull } from './hulls/HullGenerator'
-
-// Placeholder turbine
-function PlaceholderTurbine({ height, diameter, bladeCount, rotation }: {
-  height: number
-  diameter: number
-  bladeCount: number
-  rotation: number
-}) {
-  return (
-    <group position={[0, height / 2 + 1, 0]}>
-      {/* Tower */}
-      <mesh castShadow>
-        <cylinderGeometry args={[0.15, 0.2, height, 16]} />
-        <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.2} />
-      </mesh>
-      
-      {/* Rotating blades */}
-      <group position={[0, height / 2, 0]} rotation={[0, rotation, 0]}>
-        {Array.from({ length: bladeCount }).map((_, i) => {
-          const angle = (i / bladeCount) * Math.PI * 2
-          return (
-            <mesh
-              key={i}
-              position={[Math.sin(angle) * diameter / 2, 0, Math.cos(angle) * diameter / 2]}
-              rotation={[0, -angle, Math.PI / 6]}
-              castShadow
-            >
-              {/* Helical blade (simplified as curved box) */}
-              <boxGeometry args={[0.1, height * 0.8, diameter * 0.3]} />
-              <meshStandardMaterial 
-                color="#06b6d4" 
-                metalness={0.6} 
-                roughness={0.3}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          )
-        })}
-      </group>
-    </group>
-  )
-}
+import { CustomTurbine } from './CustomTurbine'
 
 export function Yacht() {
   const groupRef = useRef<THREE.Group>(null)
-  const turbineRotation = useRef(0)
 
   // Get yacht config from store
   const { currentYacht, stats } = useYachtStore()
@@ -122,22 +80,21 @@ export function Yacht() {
 
     // Gentle pitch
     groupRef.current.rotation.x = Math.sin(time * bobSpeed * 0.5) * 0.02
-
-    // Rotate turbine based on wind speed
-    turbineRotation.current += wind.speed * 0.02
   })
+
+  // Calculate deck height for turbine placement
+  const deckHeight = hull.draft + 0.4
 
   return (
     <group ref={groupRef}>
       {/* Parametric Hull - responds to hull type, dimensions, and bow shape */}
       <ParametricHull config={hull} />
 
-      {/* Turbine */}
-      <PlaceholderTurbine
-        height={turbine.height}
-        diameter={turbine.diameter}
-        bladeCount={turbine.bladeCount}
-        rotation={turbineRotation.current}
+      {/* Custom Turbine - uses blade profile from Kaleidoscope editor */}
+      <CustomTurbine
+        config={turbine}
+        deckHeight={deckHeight}
+        windSpeed={wind.speed}
       />
     </group>
   )
