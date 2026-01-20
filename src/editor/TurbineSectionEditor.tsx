@@ -10,17 +10,15 @@ import {
   BladeStyle,
   AirfoilType,
   TurbineSectionEditorState,
-  TurbineControlPoint,
   DEFAULT_BLADE_SECTION,
 } from './TurbineTypes'
 import {
-  TURBINE_PRESETS,
   TURBINE_CATEGORIES,
   getTurbinePresetsByCategory,
   BLADE_STYLE_INFO,
   AIRFOIL_INFO,
-  TurbinePreset,
 } from './TurbineShapeLibrary'
+import type { TurbinePreset } from './TurbineShapeLibrary'
 
 interface TurbineSectionEditorProps {
   config: ProceduralTurbineConfig
@@ -272,11 +270,10 @@ export function TurbineSectionEditor({ config, onConfigChange, size = 350 }: Tur
       sectionIndex = sections.findIndex(s => Math.abs(s.position - activePos) < 0.01)
     }
 
-    // Update the property
-    if (property === 'offset') {
-      // Special handling for offset
-    } else {
-      (sections[sectionIndex] as Record<string, unknown>)[property] = value
+    // Update the property by creating a new section object
+    sections[sectionIndex] = {
+      ...sections[sectionIndex],
+      [property]: value,
     }
 
     onConfigChange({
@@ -412,12 +409,12 @@ export function TurbineSectionEditor({ config, onConfigChange, size = 350 }: Tur
         {/* Blade count */}
         <div className="flex items-center gap-2 mt-2">
           <span className="text-[9px] text-slate-500 w-14">Blades</span>
-          <div className="flex gap-1 flex-1">
-            {[2, 3, 4, 5, 6, 8].map(n => (
+          <div className="flex gap-1 flex-1 flex-wrap">
+            {[2, 3, 4, 5, 6, 8, 10, 12].map(n => (
               <button
                 key={n}
                 onClick={() => onConfigChange({ bladeCount: n })}
-                className={`flex-1 py-0.5 rounded text-[9px] font-medium transition-all ${
+                className={`min-w-[22px] py-0.5 rounded text-[9px] font-medium transition-all ${
                   config.bladeCount === n ? 'bg-cyan-500 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
                 }`}
               >

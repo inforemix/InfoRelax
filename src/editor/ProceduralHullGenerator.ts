@@ -7,8 +7,6 @@ import * as THREE from 'three'
 import {
   ProceduralHullConfig,
   HullPoint,
-  ControlPoint,
-  HullCrossSection,
   BowConfig,
   SternConfig,
   KeelConfig,

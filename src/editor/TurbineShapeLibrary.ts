@@ -2,15 +2,17 @@
  * Turbine Shape Library - Comprehensive collection of turbine designs and blade presets
  */
 
+import type { TurbinePreset } from './TurbineTypes'
 import {
-  TurbinePreset,
   ProceduralTurbineConfig,
-  BladeConfig,
   BladeSection,
   DEFAULT_TURBINE_CONFIG,
   DEFAULT_BLADE_CONFIG,
   DEFAULT_BLADE_SECTION,
 } from './TurbineTypes'
+
+// Re-export TurbinePreset type for convenience
+export type { TurbinePreset }
 
 // ============================================================
 // HELPER FUNCTIONS

@@ -7,13 +7,12 @@ import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import {
   HullPoint,
   ControlPoint,
-  HullCrossSection,
   HullView,
-  DrawingMode,
   HullGridEditorState,
   ProceduralHullConfig,
 } from './HullTypes'
-import { HULL_PRESETS, HULL_CATEGORIES, getPresetsByCategory, HullPreset } from './HullPresets'
+import { HULL_CATEGORIES, getPresetsByCategory } from './HullPresets'
+import type { HullPreset } from './HullPresets'
 
 interface HullGridEditorProps {
   config: ProceduralHullConfig
@@ -292,9 +291,9 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
     if (activeProfile.length > 1) {
       const smoothProfile = interpolatePath(activeProfile, 8)
 
-      // Draw filled hull shape
+      // Draw filled hull shape with better visibility
       ctx.beginPath()
-      ctx.fillStyle = 'rgba(139, 92, 246, 0.15)'
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.35)'
       smoothProfile.forEach((p, i) => {
         const cp = toCanvas(p)
         if (i === 0) ctx.moveTo(cp.x, cp.y)
@@ -312,10 +311,10 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
       ctx.closePath()
       ctx.fill()
 
-      // Draw profile line
+      // Draw profile line with better visibility
       ctx.beginPath()
-      ctx.strokeStyle = '#8b5cf6'
-      ctx.lineWidth = 2
+      ctx.strokeStyle = '#a855f7'
+      ctx.lineWidth = 3
       smoothProfile.forEach((p, i) => {
         const cp = toCanvas(p)
         if (i === 0) ctx.moveTo(cp.x, cp.y)
@@ -326,8 +325,8 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
       // Draw mirrored profile if symmetry mode
       if (editorState.symmetryMode && editorState.activeView !== 'side') {
         ctx.beginPath()
-        ctx.strokeStyle = '#6d28d9'
-        ctx.lineWidth = 1.5
+        ctx.strokeStyle = '#7c3aed'
+        ctx.lineWidth = 2.5
         smoothProfile.forEach((p, i) => {
           const cp = toCanvas({ x: p.x, y: -p.y })
           if (i === 0) ctx.moveTo(cp.x, cp.y)
@@ -336,29 +335,32 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
         ctx.stroke()
       }
 
-      // Draw control points
+      // Draw control points with better visibility
       activeProfile.forEach((p, i) => {
         const cp = toCanvas(p)
 
-        // Point
+        // Point - larger and more visible
         ctx.beginPath()
-        ctx.fillStyle = editorState.selectedPoints.includes(i) ? '#f472b6' : '#06b6d4'
-        ctx.arc(cp.x, cp.y, 5, 0, Math.PI * 2)
+        ctx.fillStyle = editorState.selectedPoints.includes(i) ? '#f472b6' : '#22d3ee'
+        ctx.strokeStyle = '#ffffff'
+        ctx.lineWidth = 2
+        ctx.arc(cp.x, cp.y, 6, 0, Math.PI * 2)
         ctx.fill()
+        ctx.stroke()
 
         // Index label
-        ctx.fillStyle = '#94a3b8'
-        ctx.font = '9px sans-serif'
-        ctx.fillText(`${i + 1}`, cp.x + 7, cp.y - 3)
+        ctx.fillStyle = '#e2e8f0'
+        ctx.font = 'bold 10px sans-serif'
+        ctx.fillText(`${i + 1}`, cp.x + 8, cp.y - 4)
       })
     }
 
-    // Draw current drawing path
+    // Draw current drawing path with better visibility
     if (currentPath.length > 0) {
       ctx.beginPath()
       ctx.strokeStyle = '#22d3ee'
-      ctx.lineWidth = 2
-      ctx.setLineDash([4, 4])
+      ctx.lineWidth = 3
+      ctx.setLineDash([6, 4])
       currentPath.forEach((p, i) => {
         const cp = toCanvas(p)
         if (i === 0) ctx.moveTo(cp.x, cp.y)
@@ -372,9 +374,14 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
         const cp = toCanvas(p)
         ctx.beginPath()
         ctx.fillStyle = '#22d3ee'
-        ctx.arc(cp.x, cp.y, 3, 0, Math.PI * 2)
+        ctx.arc(cp.x, cp.y, 4, 0, Math.PI * 2)
         ctx.fill()
       })
+
+      // Drawing indicator
+      ctx.fillStyle = '#22d3ee'
+      ctx.font = 'bold 10px sans-serif'
+      ctx.fillText(`Drawing... (${currentPath.length} pts)`, 10, size - 10)
     }
 
     // Draw view label
@@ -387,6 +394,17 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
       perspective: '3D VIEW',
     }[editorState.activeView]
     ctx.fillText(viewLabel, 10, 20)
+
+    // Draw profile info
+    if (activeProfile.length > 0) {
+      ctx.fillStyle = '#a855f7'
+      ctx.font = '10px sans-serif'
+      ctx.fillText(`${activeProfile.length} control points`, 10, 34)
+    } else {
+      ctx.fillStyle = '#64748b'
+      ctx.font = '10px sans-serif'
+      ctx.fillText('Draw hull shape on canvas', 10, 34)
+    }
 
   }, [
     size,

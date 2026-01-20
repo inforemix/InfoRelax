@@ -196,17 +196,17 @@ export function BuildMode() {
               {panel}
             </button>
           ))}
-          {/* Mode Toggle */}
+          {/* Mode Toggle - Pro Button */}
           <button
             onClick={() => setEditorMode(editorMode === 'simple' ? 'advanced' : 'simple')}
-            className={`px-3 py-2 text-[9px] font-medium transition-all ${
+            className={`px-4 py-2 text-xs font-bold transition-all border-l border-slate-700 ${
               editorMode === 'advanced'
-                ? 'text-purple-400 bg-purple-500/20'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'text-purple-300 bg-purple-600/40 border-purple-500'
+                : 'text-slate-400 hover:text-purple-300 hover:bg-purple-500/10'
             }`}
             title={editorMode === 'simple' ? 'Switch to Advanced Editor' : 'Switch to Simple Editor'}
           >
-            {editorMode === 'simple' ? '⚡ Pro' : '✓ Pro'}
+            {editorMode === 'advanced' ? '✓ PRO MODE' : '⚡ PRO MODE'}
           </button>
         </div>
 
@@ -230,13 +230,13 @@ export function BuildMode() {
                 <Slider label="Diameter" value={turbine.diameter} min={1} max={4} step={0.5} unit="m" onChange={(v) => setTurbine({ diameter: v })} />
                 <div className="mb-2">
                   <span className="text-[10px] text-slate-500 block mb-1">Blades</span>
-                  <div className="flex gap-1">
-                    {[2, 3, 4, 5, 6].map((n) => (
+                  <div className="flex gap-1 flex-wrap">
+                    {[2, 3, 4, 5, 6, 8, 10, 12].map((n) => (
                       <button
                         key={n}
                         onClick={() => setTurbine({ bladeCount: n })}
-                        className={`flex-1 py-1 rounded text-[10px] font-medium ${
-                          turbine.bladeCount === n ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-400'
+                        className={`min-w-[28px] py-1 rounded text-[10px] font-medium ${
+                          turbine.bladeCount === n ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                         }`}
                       >
                         {n}

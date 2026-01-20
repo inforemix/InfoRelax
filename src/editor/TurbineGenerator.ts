@@ -257,10 +257,17 @@ import {
   DEFAULT_TURBINE_CONFIG,
 } from './TurbineTypes'
 
+// Helper to safely get numeric property from BladeSection
+function getSectionProperty(section: BladeSection, property: keyof BladeSection): number {
+  const value = section[property]
+  if (typeof value === 'number') return value
+  return 0
+}
+
 // Interpolate between blade sections
 function interpolateSectionValue(sections: BladeSection[], position: number, property: keyof BladeSection): number {
-  if (sections.length === 0) return (DEFAULT_BLADE_SECTION as Record<string, unknown>)[property] as number
-  if (sections.length === 1) return (sections[0] as Record<string, unknown>)[property] as number
+  if (sections.length === 0) return getSectionProperty(DEFAULT_BLADE_SECTION, property)
+  if (sections.length === 1) return getSectionProperty(sections[0], property)
 
   const sorted = [...sections].sort((a, b) => a.position - b.position)
 
@@ -277,12 +284,12 @@ function interpolateSectionValue(sections: BladeSection[], position: number, pro
   }
 
   if (lower.position === upper.position) {
-    return (lower as Record<string, unknown>)[property] as number
+    return getSectionProperty(lower, property)
   }
 
   const t = (position - lower.position) / (upper.position - lower.position)
-  const lowerVal = (lower as Record<string, unknown>)[property] as number
-  const upperVal = (upper as Record<string, unknown>)[property] as number
+  const lowerVal = getSectionProperty(lower, property)
+  const upperVal = getSectionProperty(upper, property)
 
   // Smooth interpolation
   const smoothT = t * t * (3 - 2 * t)
@@ -399,7 +406,6 @@ function generateAdvancedBladeGeometry(
   const uvs: number[] = []
 
   const chordResolution = 8
-  const totalVertsPerLevel = (chordResolution + 1) * 2
 
   // Generate vertices for each height level
   for (let i = 0; i <= segments; i++) {
@@ -500,7 +506,7 @@ function generateHubGeometry(config: ProceduralTurbineConfig): THREE.BufferGeome
 // Generate complete procedural turbine
 export function generateProceduralTurbine(config: ProceduralTurbineConfig): THREE.Group {
   const group = new THREE.Group()
-  const { height, diameter, bladeCount, blade, hub, shaft, supportArms, material } = config
+  const { height, diameter, bladeCount, hub, shaft, supportArms, material } = config
 
   // Create material based on config
   const bladeMaterial = new THREE.MeshStandardMaterial({

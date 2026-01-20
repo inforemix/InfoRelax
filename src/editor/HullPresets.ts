@@ -2,7 +2,11 @@
  * Hull Presets - Comprehensive library of hull designs users can select and modify
  */
 
-import { HullPreset, ProceduralHullConfig, ControlPoint } from './HullTypes'
+import { ProceduralHullConfig, ControlPoint } from './HullTypes'
+import type { HullPreset } from './HullTypes'
+
+// Re-export HullPreset type for convenience
+export type { HullPreset }
 
 // Default waterline profile (teardrop shape)
 const defaultWaterlineProfile: ControlPoint[] = [
