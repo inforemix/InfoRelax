@@ -18,16 +18,16 @@ export function HUD() {
   
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {/* Top Left: Energy Credits */}
-      <div className="absolute top-4 left-4 glass rounded-xl p-4 pointer-events-auto">
+      {/* Bottom Left: Energy Credits */}
+      <div className="absolute bottom-24 left-4 glass rounded-xl p-4 pointer-events-auto">
         <div className="text-xs text-slate-400 mb-1">Energy Credits</div>
         <div className="text-2xl font-bold text-yellow-400 hud-glow">
           ⚡ {formatEC(energyCredits)} EC
         </div>
       </div>
-      
-      {/* Top Right: Time & Weather */}
-      <div className="absolute top-4 right-4 glass rounded-xl p-4 text-right">
+
+      {/* Bottom Right Above Power Flow: Time & Weather */}
+      <div className="absolute bottom-52 right-4 glass rounded-xl p-4 text-right">
         <div className="text-2xl font-mono text-white">{timeString}</div>
         <div className="text-sm text-cyan-400">Trade Winds</div>
       </div>
@@ -147,10 +147,6 @@ export function HUD() {
         </div>
       </div>
       
-      {/* Center: Controls hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 glass rounded-lg px-4 py-2 text-xs text-slate-400">
-        WASD to move • Scroll to zoom • Drag to rotate
-      </div>
     </div>
   )
 }
