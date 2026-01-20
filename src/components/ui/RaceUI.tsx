@@ -6,9 +6,13 @@ import { getAllRaces } from '../../data/races'
 export function RaceMenu() {
   const isRacing = useRaceStore((state) => state.isRacing)
   const startRace = useRaceStore((state) => state.startRace)
+  const gameMode = useGameStore((state) => state.gameMode)
   const [showRaceSelect, setShowRaceSelect] = useState(false)
 
   const races = getAllRaces()
+
+  // Hide race menu in build mode
+  if (gameMode === 'build') return null
 
   if (showRaceSelect && !isRacing) {
     return (
