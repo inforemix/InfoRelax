@@ -31,10 +31,12 @@ export interface TurbineConfig {
   bladeProfile: BladePoint[]  // Custom blade shape from Kaleidoscope
   material: 'solar' | 'chrome' | 'led'
 
-  // Advanced blade shape parameters
+  // Global blade shape
   twist: number           // Helical twist angle (0-120 degrees)
   taper: number           // Top/bottom width ratio (0.3-1.0, 1.0 = no taper)
   sweep: number           // Blade sweep angle (-30 to 30 degrees)
+  thickness: number       // Blade thickness (0.02-0.2)
+  camber: number          // Blade curvature (-0.5 to 0.5)
 
   // Section widths (multiplier 0.5-2.0)
   widthTop: number
@@ -97,12 +99,13 @@ const defaultYacht: YachtConfig = {
     height: 8,
     diameter: 2,
     bladeCount: 3,
-    bladeProfile: [], // Empty = use preset
+    bladeProfile: [],
     material: 'solar',
-    // Advanced shape parameters
     twist: 45,
     taper: 0.8,
     sweep: 0,
+    thickness: 0.08,
+    camber: 0,
     widthTop: 1.0,
     widthMid: 1.0,
     widthBottom: 1.0,

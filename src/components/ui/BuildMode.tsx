@@ -1,16 +1,15 @@
 import { useState, useCallback } from 'react'
 import { useYachtStore, HullType } from '@/state/useYachtStore'
 import { KaleidoscopeCanvas } from '@/editor/KaleidoscopeCanvas'
-import { BLADE_PRESETS, BladePreset } from '@/editor/BladePresets'
 
-// Slider component for consistent styling
+// Compact slider
 function Slider({
   label,
   value,
   min,
   max,
   step,
-  unit,
+  unit = '',
   onChange,
 }: {
   label: string
@@ -18,15 +17,12 @@ function Slider({
   min: number
   max: number
   step: number
-  unit: string
+  unit?: string
   onChange: (value: number) => void
 }) {
   return (
-    <div className="mb-2">
-      <div className="flex justify-between text-xs mb-0.5">
-        <span className="text-slate-400">{label}</span>
-        <span className="text-white font-mono text-[11px]">{value.toFixed(step < 1 ? 1 : 0)}{unit}</span>
-      </div>
+    <div className="flex items-center gap-2 mb-1.5">
+      <span className="text-[10px] text-slate-500 w-16 shrink-0">{label}</span>
       <input
         type="range"
         min={min}
@@ -34,468 +30,267 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+        className="flex-1 h-1 bg-slate-700 rounded appearance-none cursor-pointer accent-cyan-500"
       />
+      <span className="text-[10px] text-slate-400 w-10 text-right font-mono">
+        {value.toFixed(step < 1 ? (step < 0.1 ? 2 : 1) : 0)}{unit}
+      </span>
     </div>
   )
 }
 
-// Compact slider for section controls
-function MiniSlider({
-  label,
+// Collapsible section
+function Section({
+  title,
+  children,
+  defaultOpen = true
+}: {
+  title: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <div className="mb-3">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1 w-full text-left mb-1.5"
+      >
+        <span className={`text-[10px] transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{title}</span>
+      </button>
+      {isOpen && <div className="pl-3">{children}</div>}
+    </div>
+  )
+}
+
+// Button group
+function ButtonGroup<T extends string>({
+  options,
   value,
-  min,
-  max,
-  step,
   onChange,
+  disabled,
 }: {
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  onChange: (value: number) => void
+  options: { value: T; label: string; locked?: boolean }[]
+  value: T
+  onChange: (v: T) => void
+  disabled?: T[]
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[10px] text-slate-500 w-8">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
-      />
-      <span className="text-[10px] text-slate-400 w-8 text-right font-mono">{value.toFixed(1)}</span>
+    <div className="flex gap-1 mb-2">
+      {options.map((opt) => {
+        const isDisabled = opt.locked || disabled?.includes(opt.value)
+        return (
+          <button
+            key={opt.value}
+            onClick={() => !isDisabled && onChange(opt.value)}
+            className={`flex-1 py-1 rounded text-[10px] font-medium transition-all ${
+              value === opt.value
+                ? 'bg-cyan-500 text-white'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            } ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={isDisabled}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
 
-// Section group component
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-4">
-      <h4 className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">{title}</h4>
-      {children}
-    </div>
-  )
-}
-
-// Tab type for the editor panels
-type EditorTab = 'design' | 'shape' | 'hull'
+type EditorPanel = 'turbine' | 'hull'
 
 export function BuildMode() {
   const { currentYacht, setHull, setTurbine, setBladeProfile, stats } = useYachtStore()
   const { hull, turbine } = currentYacht
-  const [activeTab, setActiveTab] = useState<EditorTab>('design')
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+  const [activePanel, setActivePanel] = useState<EditorPanel>('turbine')
 
-  // Handle blade profile changes
   const handleBladeChange = useCallback((points: typeof turbine.bladeProfile) => {
     setBladeProfile(points)
-    setSelectedPreset(null)
-  }, [setBladeProfile])
-
-  // Load a preset
-  const loadPreset = useCallback((preset: BladePreset) => {
-    setBladeProfile(preset.points)
-    setSelectedPreset(preset.id)
   }, [setBladeProfile])
 
   return (
     <div className="absolute inset-0 flex pointer-events-auto">
-      {/* Left Panel - Editor (50% width) */}
-      <div className="w-1/2 h-full bg-slate-900/95 backdrop-blur-md flex flex-col">
-        {/* Tabs */}
-        <div className="flex items-center gap-1 px-4 py-3 border-b border-slate-700/50">
-          {(['design', 'shape', 'hull'] as EditorTab[]).map((tab) => (
+      {/* Left Panel - 1/3 width */}
+      <div className="w-1/3 h-full bg-slate-900/95 backdrop-blur-md flex flex-col overflow-hidden">
+        {/* Panel Tabs */}
+        <div className="flex border-b border-slate-800">
+          {(['turbine', 'hull'] as EditorPanel[]).map((panel) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all capitalize ${
-                activeTab === tab
-                  ? 'bg-cyan-500 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              key={panel}
+              onClick={() => setActivePanel(panel)}
+              className={`flex-1 py-2 text-xs font-medium transition-all capitalize ${
+                activePanel === panel
+                  ? 'text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/50'
+                  : 'text-slate-500 hover:text-slate-300'
               }`}
             >
-              {tab === 'design' ? 'Blade Design' : tab === 'shape' ? 'Blade Shape' : 'Hull'}
+              {panel}
             </button>
           ))}
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Design Tab - Kaleidoscope Editor */}
-          {activeTab === 'design' && (
-            <div className="p-4">
-              <div className="flex gap-4">
-                {/* Canvas */}
-                <div className="flex-shrink-0">
-                  <KaleidoscopeCanvas
-                    bladeCount={turbine.bladeCount}
-                    initialPoints={turbine.bladeProfile}
-                    onPointsChange={handleBladeChange}
-                    size={300}
-                  />
-                  <p className="text-[10px] text-slate-500 mt-2 text-center">
-                    Draw from center • {turbine.bladeCount}-way symmetry ({360 / turbine.bladeCount}°)
-                  </p>
-                </div>
-
-                {/* Quick Settings & Presets */}
-                <div className="flex-1 min-w-0">
-                  <Section title="Turbine Size">
-                    <Slider
-                      label="Height"
-                      value={turbine.height}
-                      min={5}
-                      max={15}
-                      step={0.5}
-                      unit="m"
-                      onChange={(v) => setTurbine({ height: v })}
-                    />
-                    <Slider
-                      label="Diameter"
-                      value={turbine.diameter}
-                      min={1}
-                      max={4}
-                      step={0.5}
-                      unit="m"
-                      onChange={(v) => setTurbine({ diameter: v })}
-                    />
-                  </Section>
-
-                  <Section title="Blade Count">
-                    <div className="flex gap-1">
-                      {[2, 3, 4, 5, 6].map((count) => (
-                        <button
-                          key={count}
-                          onClick={() => setTurbine({ bladeCount: count })}
-                          className={`flex-1 py-1.5 rounded text-sm font-medium transition-all ${
-                            turbine.bladeCount === count
-                              ? 'bg-cyan-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          }`}
-                        >
-                          {count}
-                        </button>
-                      ))}
-                    </div>
-                  </Section>
-
-                  <Section title="Presets">
-                    <div className="grid grid-cols-4 gap-1">
-                      {BLADE_PRESETS.slice(0, 8).map((preset) => (
-                        <button
-                          key={preset.id}
-                          onClick={() => loadPreset(preset)}
-                          className={`p-1.5 rounded text-center transition-all ${
-                            selectedPreset === preset.id
-                              ? 'bg-purple-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          }`}
-                          title={preset.description}
-                        >
-                          <span className="text-sm">{preset.icon}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </Section>
-
-                  <Section title="Material">
-                    <div className="flex gap-1">
-                      {(['solar', 'chrome', 'led'] as const).map((mat) => (
-                        <button
-                          key={mat}
-                          onClick={() => setTurbine({ material: mat })}
-                          className={`flex-1 py-1.5 rounded text-xs font-medium transition-all capitalize ${
-                            turbine.material === mat
-                              ? 'bg-cyan-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          }`}
-                        >
-                          {mat}
-                        </button>
-                      ))}
-                    </div>
-                  </Section>
-                </div>
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-3">
+          {/* TURBINE PANEL */}
+          {activePanel === 'turbine' && (
+            <>
+              {/* Kaleidoscope Canvas */}
+              <div className="flex justify-center mb-3">
+                <KaleidoscopeCanvas
+                  bladeCount={turbine.bladeCount}
+                  initialPoints={turbine.bladeProfile}
+                  onPointsChange={handleBladeChange}
+                  size={220}
+                />
               </div>
-            </div>
+
+              <Section title="Turbine">
+                <Slider label="Height" value={turbine.height} min={5} max={15} step={0.5} unit="m" onChange={(v) => setTurbine({ height: v })} />
+                <Slider label="Diameter" value={turbine.diameter} min={1} max={4} step={0.5} unit="m" onChange={(v) => setTurbine({ diameter: v })} />
+                <div className="mb-2">
+                  <span className="text-[10px] text-slate-500 block mb-1">Blades</span>
+                  <div className="flex gap-1">
+                    {[2, 3, 4, 5, 6].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setTurbine({ bladeCount: n })}
+                        className={`flex-1 py-1 rounded text-[10px] font-medium ${
+                          turbine.bladeCount === n ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="Blade Shape">
+                <Slider label="Twist" value={turbine.twist ?? 45} min={0} max={120} step={5} unit="°" onChange={(v) => setTurbine({ twist: v })} />
+                <Slider label="Taper" value={turbine.taper ?? 0.8} min={0.3} max={1.0} step={0.05} onChange={(v) => setTurbine({ taper: v })} />
+                <Slider label="Sweep" value={turbine.sweep ?? 0} min={-30} max={30} step={5} unit="°" onChange={(v) => setTurbine({ sweep: v })} />
+                <Slider label="Thickness" value={turbine.thickness ?? 0.08} min={0.02} max={0.2} step={0.01} onChange={(v) => setTurbine({ thickness: v })} />
+                <Slider label="Camber" value={turbine.camber ?? 0} min={-0.5} max={0.5} step={0.05} onChange={(v) => setTurbine({ camber: v })} />
+              </Section>
+
+              <Section title="Width by Section" defaultOpen={false}>
+                <Slider label="Top" value={turbine.widthTop ?? 1.0} min={0.5} max={2.0} step={0.1} onChange={(v) => setTurbine({ widthTop: v })} />
+                <Slider label="Mid" value={turbine.widthMid ?? 1.0} min={0.5} max={2.0} step={0.1} onChange={(v) => setTurbine({ widthMid: v })} />
+                <Slider label="Bottom" value={turbine.widthBottom ?? 1.0} min={0.5} max={2.0} step={0.1} onChange={(v) => setTurbine({ widthBottom: v })} />
+              </Section>
+
+              <Section title="Pitch by Section" defaultOpen={false}>
+                <Slider label="Top" value={turbine.angleTop ?? 0} min={-45} max={45} step={5} unit="°" onChange={(v) => setTurbine({ angleTop: v })} />
+                <Slider label="Mid" value={turbine.angleMid ?? 0} min={-45} max={45} step={5} unit="°" onChange={(v) => setTurbine({ angleMid: v })} />
+                <Slider label="Bottom" value={turbine.angleBottom ?? 0} min={-45} max={45} step={5} unit="°" onChange={(v) => setTurbine({ angleBottom: v })} />
+              </Section>
+
+              <Section title="Material">
+                <ButtonGroup
+                  options={[
+                    { value: 'solar', label: 'Solar' },
+                    { value: 'chrome', label: 'Chrome' },
+                    { value: 'led', label: 'LED' },
+                  ]}
+                  value={turbine.material}
+                  onChange={(v) => setTurbine({ material: v })}
+                />
+              </Section>
+
+              <Section title="Style" defaultOpen={false}>
+                <ButtonGroup
+                  options={[
+                    { value: 'helix', label: 'Helix' },
+                    { value: 'infinity', label: 'Infinity', locked: true },
+                    { value: 'ribbon', label: 'Ribbon', locked: true },
+                  ]}
+                  value={turbine.style}
+                  onChange={(v) => setTurbine({ style: v })}
+                />
+              </Section>
+            </>
           )}
 
-          {/* Shape Tab - Advanced Blade Parameters */}
-          {activeTab === 'shape' && (
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-6">
-                {/* Global Shape */}
-                <div>
-                  <Section title="Global Shape">
-                    <Slider
-                      label="Helical Twist"
-                      value={turbine.twist ?? 45}
-                      min={0}
-                      max={120}
-                      step={5}
-                      unit="°"
-                      onChange={(v) => setTurbine({ twist: v })}
-                    />
-                    <Slider
-                      label="Taper (top/bottom)"
-                      value={turbine.taper ?? 0.8}
-                      min={0.3}
-                      max={1.0}
-                      step={0.1}
-                      unit=""
-                      onChange={(v) => setTurbine({ taper: v })}
-                    />
-                    <Slider
-                      label="Sweep Angle"
-                      value={turbine.sweep ?? 0}
-                      min={-30}
-                      max={30}
-                      step={5}
-                      unit="°"
-                      onChange={(v) => setTurbine({ sweep: v })}
-                    />
-                  </Section>
-
-                  <Section title="Turbine Style">
-                    <div className="grid grid-cols-3 gap-2">
-                      {([
-                        { style: 'helix', label: 'Helix', locked: false },
-                        { style: 'infinity', label: 'Infinity', locked: true },
-                        { style: 'ribbon', label: 'Ribbon', locked: true },
-                      ] as const).map(({ style, label, locked }) => (
-                        <button
-                          key={style}
-                          onClick={() => !locked && setTurbine({ style })}
-                          className={`px-2 py-2 rounded-lg text-xs transition-all ${
-                            turbine.style === style
-                              ? 'bg-cyan-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          } ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          disabled={locked}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </Section>
+          {/* HULL PANEL */}
+          {activePanel === 'hull' && (
+            <>
+              <Section title="Hull Type">
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  {(['monohull', 'catamaran', 'trimaran', 'hydrofoil'] as HullType[]).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => type !== 'hydrofoil' && setHull({ type })}
+                      className={`p-2 rounded text-center transition-all ${
+                        hull.type === type
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      } ${type === 'hydrofoil' ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      disabled={type === 'hydrofoil'}
+                    >
+                      <span className="text-sm block">
+                        {type === 'monohull' && '⛵'}
+                        {type === 'catamaran' && '🚤'}
+                        {type === 'trimaran' && '⛴️'}
+                        {type === 'hydrofoil' && '🔒'}
+                      </span>
+                      <span className="text-[9px] capitalize">{type}</span>
+                    </button>
+                  ))}
                 </div>
+              </Section>
 
-                {/* Section Controls */}
-                <div>
-                  <Section title="Width by Section">
-                    <div className="space-y-1.5 bg-slate-800/50 rounded-lg p-3">
-                      <MiniSlider
-                        label="Top"
-                        value={turbine.widthTop ?? 1.0}
-                        min={0.5}
-                        max={2.0}
-                        step={0.1}
-                        onChange={(v) => setTurbine({ widthTop: v })}
-                      />
-                      <MiniSlider
-                        label="Mid"
-                        value={turbine.widthMid ?? 1.0}
-                        min={0.5}
-                        max={2.0}
-                        step={0.1}
-                        onChange={(v) => setTurbine({ widthMid: v })}
-                      />
-                      <MiniSlider
-                        label="Bot"
-                        value={turbine.widthBottom ?? 1.0}
-                        min={0.5}
-                        max={2.0}
-                        step={0.1}
-                        onChange={(v) => setTurbine({ widthBottom: v })}
-                      />
-                    </div>
-                  </Section>
+              <Section title="Dimensions">
+                <Slider label="Length" value={hull.length} min={6} max={20} step={0.5} unit="m" onChange={(v) => setHull({ length: v })} />
+                <Slider label="Beam" value={hull.beam} min={2} max={12} step={0.5} unit="m" onChange={(v) => setHull({ beam: v })} />
+                <Slider label="Draft" value={hull.draft} min={0.5} max={2} step={0.1} unit="m" onChange={(v) => setHull({ draft: v })} />
+              </Section>
 
-                  <Section title="Chord Angle by Section">
-                    <div className="space-y-1.5 bg-slate-800/50 rounded-lg p-3">
-                      <MiniSlider
-                        label="Top"
-                        value={turbine.angleTop ?? 0}
-                        min={-45}
-                        max={45}
-                        step={5}
-                        onChange={(v) => setTurbine({ angleTop: v })}
-                      />
-                      <MiniSlider
-                        label="Mid"
-                        value={turbine.angleMid ?? 0}
-                        min={-45}
-                        max={45}
-                        step={5}
-                        onChange={(v) => setTurbine({ angleMid: v })}
-                      />
-                      <MiniSlider
-                        label="Bot"
-                        value={turbine.angleBottom ?? 0}
-                        min={-45}
-                        max={45}
-                        step={5}
-                        onChange={(v) => setTurbine({ angleBottom: v })}
-                      />
-                    </div>
-                  </Section>
+              <Section title="Bow Shape">
+                <ButtonGroup
+                  options={[
+                    { value: 'piercing', label: 'Piercing' },
+                    { value: 'flared', label: 'Flared' },
+                    { value: 'bulbous', label: 'Bulbous' },
+                  ]}
+                  value={hull.bowShape}
+                  onChange={(v) => setHull({ bowShape: v })}
+                />
+              </Section>
 
-                  {/* Reset Button */}
-                  <button
-                    onClick={() => setTurbine({
-                      twist: 45,
-                      taper: 0.8,
-                      sweep: 0,
-                      widthTop: 1.0,
-                      widthMid: 1.0,
-                      widthBottom: 1.0,
-                      angleTop: 0,
-                      angleMid: 0,
-                      angleBottom: 0,
-                    })}
-                    className="w-full mt-2 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition-all"
-                  >
-                    Reset to Default
-                  </button>
+              <Section title="Performance">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-slate-800/50 rounded p-2 text-center">
+                    <div className="text-sm font-bold text-red-400">{stats.dragCoefficient.toFixed(3)}</div>
+                    <div className="text-[9px] text-slate-500">Drag</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded p-2 text-center">
+                    <div className="text-sm font-bold text-blue-400">{stats.stability.toFixed(1)}</div>
+                    <div className="text-[9px] text-slate-500">Stability</div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Hull Tab */}
-          {activeTab === 'hull' && (
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Section title="Hull Type">
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['monohull', 'catamaran', 'trimaran', 'hydrofoil'] as HullType[]).map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => setHull({ type })}
-                          className={`p-3 rounded-lg text-center transition-all ${
-                            hull.type === type
-                              ? 'bg-cyan-500 text-white ring-1 ring-cyan-400'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          } ${type === 'hydrofoil' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          disabled={type === 'hydrofoil'}
-                        >
-                          <span className="text-lg block">
-                            {type === 'monohull' && '⛵'}
-                            {type === 'catamaran' && '🚤'}
-                            {type === 'trimaran' && '⛴️'}
-                            {type === 'hydrofoil' && '🔒'}
-                          </span>
-                          <span className="text-xs capitalize">{type}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </Section>
-
-                  <Section title="Bow Shape">
-                    <div className="grid grid-cols-3 gap-2">
-                      {([
-                        { shape: 'piercing', icon: '🏎️' },
-                        { shape: 'flared', icon: '🌊' },
-                        { shape: 'bulbous', icon: '💡' },
-                      ] as const).map(({ shape, icon }) => (
-                        <button
-                          key={shape}
-                          onClick={() => setHull({ bowShape: shape })}
-                          className={`p-2 rounded-lg text-center transition-all ${
-                            hull.bowShape === shape
-                              ? 'bg-cyan-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          }`}
-                        >
-                          <span className="text-lg">{icon}</span>
-                          <span className="block text-[10px] capitalize">{shape}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </Section>
-                </div>
-
-                <div>
-                  <Section title="Dimensions">
-                    <Slider
-                      label="Length"
-                      value={hull.length}
-                      min={6}
-                      max={20}
-                      step={0.5}
-                      unit="m"
-                      onChange={(v) => setHull({ length: v })}
-                    />
-                    <Slider
-                      label="Beam (Width)"
-                      value={hull.beam}
-                      min={2}
-                      max={12}
-                      step={0.5}
-                      unit="m"
-                      onChange={(v) => setHull({ beam: v })}
-                    />
-                    <Slider
-                      label="Draft (Depth)"
-                      value={hull.draft}
-                      min={0.5}
-                      max={2}
-                      step={0.1}
-                      unit="m"
-                      onChange={(v) => setHull({ draft: v })}
-                    />
-                  </Section>
-
-                  <Section title="Performance">
-                    <div className="grid grid-cols-2 gap-2 text-center">
-                      <div className="bg-slate-800/50 rounded-lg p-2">
-                        <div className="text-lg font-bold text-red-400">{stats.dragCoefficient.toFixed(3)}</div>
-                        <div className="text-[10px] text-slate-500">Drag</div>
-                      </div>
-                      <div className="bg-slate-800/50 rounded-lg p-2">
-                        <div className="text-lg font-bold text-blue-400">{stats.stability.toFixed(1)}</div>
-                        <div className="text-[10px] text-slate-500">Stability</div>
-                      </div>
-                    </div>
-                  </Section>
-                </div>
-              </div>
-            </div>
+              </Section>
+            </>
           )}
         </div>
 
         {/* Footer Stats */}
-        <div className="px-4 py-2 border-t border-slate-700/50 bg-slate-800/30">
-          <div className="flex justify-between items-center text-xs">
-            <div className="flex gap-6">
-              <span><span className="text-slate-500">Speed</span> <span className="text-cyan-400 font-bold">{stats.maxSpeed.toFixed(1)} kts</span></span>
-              <span><span className="text-slate-500">Range</span> <span className="text-yellow-400 font-bold">{stats.range.toFixed(0)} km</span></span>
-              <span><span className="text-slate-500">Efficiency</span> <span className="text-green-400 font-bold">{(stats.turbineEfficiency * 100).toFixed(0)}%</span></span>
-            </div>
-            <button className="px-4 py-1.5 bg-green-600 hover:bg-green-500 rounded text-white font-medium transition-all">
-              Save
-            </button>
+        <div className="px-3 py-2 border-t border-slate-800 bg-slate-900/80">
+          <div className="flex justify-between text-[10px]">
+            <span className="text-slate-500">Speed <span className="text-cyan-400 font-bold">{stats.maxSpeed.toFixed(1)}</span></span>
+            <span className="text-slate-500">Range <span className="text-yellow-400 font-bold">{stats.range.toFixed(0)}km</span></span>
+            <span className="text-slate-500">Eff <span className="text-green-400 font-bold">{(stats.turbineEfficiency * 100).toFixed(0)}%</span></span>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - 3D Preview (50% width) */}
-      <div className="w-1/2 h-full relative">
-        {/* Preview label */}
-        <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-          <span className="text-xs text-slate-400">Live Preview</span>
-        </div>
-
-        {/* Controls hint */}
-        <div className="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-          <p className="text-[10px] text-slate-500">Drag to rotate • Scroll to zoom</p>
+      {/* Right Panel - 2/3 preview (transparent) */}
+      <div className="w-2/3 h-full relative">
+        {/* Hint at bottom */}
+        <div className="absolute bottom-4 right-4 bg-slate-900/60 backdrop-blur-sm px-2 py-1 rounded">
+          <p className="text-[9px] text-slate-500">Drag to rotate • Scroll to zoom</p>
         </div>
       </div>
     </div>
