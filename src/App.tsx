@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { Sky, Stars } from '@react-three/drei'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { Leva } from 'leva'
 
 // Components
@@ -8,15 +8,35 @@ import { Ocean } from './components/three/Ocean'
 import { Yacht } from './components/three/Yacht'
 import { WindIndicator } from './components/three/WindIndicator'
 import { CameraController } from './components/three/CameraController'
+import { Islands } from './components/three/Islands'
+import { Marina } from './components/three/Marina'
+import { PointsOfInterest } from './components/three/PointsOfInterest'
+import { RaceCheckpoints } from './components/three/RaceCheckpoints'
 import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
+import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
+import { useWorldStore } from './state/useWorldStore'
+import { useRaceStore } from './state/useRaceStore'
+
+// Hooks
+import { useWorldIntegration } from './hooks/useWorldIntegration'
 
 export default function App() {
   const { timeOfDay, gameMode, setGameMode } = useGameStore()
+  const initializeWorld = useWorldStore((state) => state.initializeWorld)
+  const currentRace = useRaceStore((state) => state.currentRace)
+
+  // Initialize world on mount
+  useEffect(() => {
+    initializeWorld(42, 10000) // Seed 42 for reproducible world
+  }, [initializeWorld])
+
+  // Integrate world mechanics with game state
+  useWorldIntegration()
 
   return (
     <div className="w-full h-full relative">
@@ -52,8 +72,16 @@ export default function App() {
           {/* Ocean */}
           <Ocean />
 
+          {/* World */}
+          <Islands />
+          <Marina />
+          <PointsOfInterest />
+
           {/* Player Yacht */}
           <Yacht />
+
+          {/* Racing */}
+          {currentRace && <RaceCheckpoints />}
 
           {/* Wind Indicator */}
           <WindIndicator />
@@ -96,6 +124,11 @@ export default function App() {
 
         {/* Build Mode UI */}
         {gameMode === 'build' && <BuildMode />}
+
+        {/* Racing UI */}
+        <RaceMenu />
+        <RaceStatus />
+        <Leaderboard />
       </Suspense>
     </div>
   )
