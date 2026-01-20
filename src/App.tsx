@@ -16,27 +16,35 @@ import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
+import { LandingPage } from './components/ui/LandingPage'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
-import { useWorldStore } from './state/useWorldStore'
 import { useRaceStore } from './state/useRaceStore'
+import { useLandingStore } from './state/useLandingStore'
 
 // Hooks
 import { useWorldIntegration } from './hooks/useWorldIntegration'
 
 export default function App() {
   const { timeOfDay, gameMode, setGameMode } = useGameStore()
-  const initializeWorld = useWorldStore((state) => state.initializeWorld)
   const currentRace = useRaceStore((state) => state.currentRace)
+  const gameStarted = useLandingStore((state) => state.gameStarted)
 
-  // Initialize world on mount
+  // Initialize world on mount - only if game has started
   useEffect(() => {
-    initializeWorld(42, 10000) // Seed 42 for reproducible world
-  }, [initializeWorld])
+    if (gameStarted) {
+      // World will be initialized by landing page when map is selected
+    }
+  }, [gameStarted])
 
   // Integrate world mechanics with game state
   useWorldIntegration()
+
+  // Show landing page if game hasn't started
+  if (!gameStarted) {
+    return <LandingPage />
+  }
 
   return (
     <div className="w-full h-full relative">
@@ -121,6 +129,15 @@ export default function App() {
             Build
           </button>
         </div>
+
+        {/* Back to Landing - Top Right */}
+        <button
+          onClick={() => useLandingStore.getState().resetToLanding()}
+          className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-slate-800/90 text-slate-300 hover:bg-slate-700 font-medium transition-all z-50"
+          title="Return to map selection"
+        >
+          ← Exit
+        </button>
 
         {/* Build Mode UI */}
         {gameMode === 'build' && <BuildMode />}
