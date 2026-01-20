@@ -18,27 +18,19 @@ export function HUD() {
   
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {/* Bottom Left: Energy Credits */}
-      <div className="absolute bottom-24 left-4 glass rounded-xl p-4 pointer-events-auto">
-        <div className="text-xs text-slate-400 mb-1">Energy Credits</div>
-        <div className="text-2xl font-bold text-yellow-400 hud-glow">
-          ⚡ {formatEC(energyCredits)} EC
-        </div>
-      </div>
-
-      {/* Bottom Right Above Power Flow: Time & Weather */}
-      <div className="absolute bottom-52 right-4 glass rounded-xl p-4 text-right">
+      {/* Top Right: Time & Weather */}
+      <div className="absolute top-4 right-4 glass rounded-xl p-4 text-right">
         <div className="text-2xl font-mono text-white">{timeString}</div>
         <div className="text-sm text-cyan-400">Trade Winds</div>
       </div>
-      
-      {/* Bottom Left: Wind & Speed */}
-      <div className="absolute bottom-4 left-4 glass rounded-xl p-4">
+
+      {/* Bottom Center: Wind, Speed & Throttle */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 glass rounded-xl p-4">
         <div className="flex items-center gap-4">
           {/* Wind */}
           <div className="text-center">
             <div className="text-xs text-slate-400">Wind</div>
-            <div 
+            <div
               className="w-8 h-8 mx-auto my-1 text-cyan-400"
               style={{ transform: `rotate(${wind.direction}deg)` }}
             >
@@ -47,10 +39,10 @@ export function HUD() {
             <div className="text-lg font-bold text-white">{wind.speed.toFixed(1)}</div>
             <div className="text-xs text-slate-400">m/s</div>
           </div>
-          
+
           {/* Divider */}
           <div className="w-px h-16 bg-slate-600" />
-          
+
           {/* Speed */}
           <div className="text-center">
             <div className="text-xs text-slate-400">Speed</div>
@@ -59,16 +51,28 @@ export function HUD() {
             </div>
             <div className="text-xs text-slate-400">knots</div>
           </div>
-          
+
           {/* Divider */}
           <div className="w-px h-16 bg-slate-600" />
-          
+
           {/* Throttle */}
           <div className="text-center">
             <div className="text-xs text-slate-400">Throttle</div>
             <div className="text-3xl font-bold text-white my-1">
               {player.throttle}%
             </div>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-16 bg-slate-600" />
+
+          {/* Energy Credits */}
+          <div className="text-center">
+            <div className="text-xs text-slate-400">Credits</div>
+            <div className="text-2xl font-bold text-yellow-400 my-1 hud-glow">
+              ⚡ {formatEC(energyCredits)}
+            </div>
+            <div className="text-xs text-slate-400">EC</div>
           </div>
         </div>
       </div>

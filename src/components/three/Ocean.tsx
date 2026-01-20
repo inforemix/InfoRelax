@@ -92,6 +92,180 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
   return <primitive object={water} ref={waterRef} />
 }
 
+// Gerstner wave ocean with realistic rolling waves
+export function GerstnerOcean({ size = 500, segments = 256 }: OceanProps) {
+  const materialRef = useRef<THREE.ShaderMaterial>(null)
+
+  // Leva controls for wave tuning
+  const { waveHeight, waveSpeed, choppiness, windDirection } = useControls('Gerstner Ocean', {
+    waveHeight: { value: 1.2, min: 0, max: 4, step: 0.1, label: 'Wave Height' },
+    waveSpeed: { value: 0.8, min: 0.1, max: 2, step: 0.1, label: 'Wave Speed' },
+    choppiness: { value: 0.8, min: 0, max: 2, step: 0.1, label: 'Choppiness' },
+    windDirection: { value: 45, min: 0, max: 360, step: 5, label: 'Wind Dir (°)' },
+  })
+
+  // Gerstner wave shader for realistic ocean waves
+  const shaderMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uWaveHeight: { value: waveHeight },
+        uChoppiness: { value: choppiness },
+        uWindDirection: { value: windDirection * Math.PI / 180 },
+        uColorShallow: { value: new THREE.Color('#0891b2') },
+        uColorDeep: { value: new THREE.Color('#0c4a6e') },
+        uColorFoam: { value: new THREE.Color('#e0f7fa') },
+        uSunDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
+      },
+      vertexShader: `
+        uniform float uTime;
+        uniform float uWaveHeight;
+        uniform float uChoppiness;
+        uniform float uWindDirection;
+
+        varying vec2 vUv;
+        varying float vElevation;
+        varying vec3 vWorldPosition;
+        varying vec3 vNormal;
+        varying float vFoam;
+
+        // Gerstner wave function
+        // Returns displacement and contributes to normal calculation
+        vec3 gerstnerWave(vec2 pos, float steepness, float wavelength, float speed, vec2 direction, float time) {
+          float k = 2.0 * 3.14159 / wavelength;
+          float c = sqrt(9.8 / k);
+          vec2 d = normalize(direction);
+          float f = k * (dot(d, pos) - c * speed * time);
+          float a = steepness / k;
+
+          return vec3(
+            d.x * (a * cos(f)),
+            a * sin(f),
+            d.y * (a * cos(f))
+          );
+        }
+
+        void main() {
+          vUv = uv;
+          vec3 pos = position;
+
+          // Wind direction affects wave propagation
+          vec2 windDir = vec2(cos(uWindDirection), sin(uWindDirection));
+
+          // Multiple Gerstner waves for realistic ocean
+          // Wave 1: Primary swell (long wavelength, aligned with wind)
+          vec3 wave1 = gerstnerWave(pos.xz, 0.15 * uChoppiness, 60.0, 1.0, windDir, uTime);
+
+          // Wave 2: Secondary swell (medium wavelength, slight angle)
+          vec2 dir2 = vec2(cos(uWindDirection + 0.3), sin(uWindDirection + 0.3));
+          vec3 wave2 = gerstnerWave(pos.xz, 0.12 * uChoppiness, 35.0, 1.2, dir2, uTime);
+
+          // Wave 3: Cross wave (shorter, perpendicular)
+          vec2 dir3 = vec2(cos(uWindDirection + 1.57), sin(uWindDirection + 1.57));
+          vec3 wave3 = gerstnerWave(pos.xz, 0.08 * uChoppiness, 20.0, 0.9, dir3, uTime);
+
+          // Wave 4: Chop (short wavelength, adds texture)
+          vec2 dir4 = vec2(cos(uWindDirection - 0.5), sin(uWindDirection - 0.5));
+          vec3 wave4 = gerstnerWave(pos.xz, 0.05 * uChoppiness, 10.0, 1.5, dir4, uTime);
+
+          // Wave 5: Fine detail
+          vec3 wave5 = gerstnerWave(pos.xz, 0.03 * uChoppiness, 5.0, 2.0, windDir * -1.0, uTime);
+
+          // Combine waves
+          vec3 totalWave = (wave1 + wave2 + wave3 + wave4 + wave5) * uWaveHeight;
+
+          pos.x += totalWave.x;
+          pos.y += totalWave.y;
+          pos.z += totalWave.z;
+
+          vElevation = totalWave.y;
+
+          // Foam appears on wave crests
+          vFoam = smoothstep(0.3 * uWaveHeight, 0.8 * uWaveHeight, totalWave.y);
+
+          // Calculate normal from wave derivatives
+          float eps = 0.5;
+          vec3 waveX1 = gerstnerWave(pos.xz + vec2(eps, 0.0), 0.15 * uChoppiness, 60.0, 1.0, windDir, uTime) * uWaveHeight;
+          vec3 waveX2 = gerstnerWave(pos.xz - vec2(eps, 0.0), 0.15 * uChoppiness, 60.0, 1.0, windDir, uTime) * uWaveHeight;
+          vec3 waveZ1 = gerstnerWave(pos.xz + vec2(0.0, eps), 0.15 * uChoppiness, 60.0, 1.0, windDir, uTime) * uWaveHeight;
+          vec3 waveZ2 = gerstnerWave(pos.xz - vec2(0.0, eps), 0.15 * uChoppiness, 60.0, 1.0, windDir, uTime) * uWaveHeight;
+
+          vec3 tangent = normalize(vec3(2.0 * eps, waveX1.y - waveX2.y, 0.0));
+          vec3 bitangent = normalize(vec3(0.0, waveZ1.y - waveZ2.y, 2.0 * eps));
+          vNormal = normalize(cross(bitangent, tangent));
+
+          vWorldPosition = (modelMatrix * vec4(pos, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColorShallow;
+        uniform vec3 uColorDeep;
+        uniform vec3 uColorFoam;
+        uniform vec3 uSunDirection;
+        uniform float uTime;
+
+        varying vec2 vUv;
+        varying float vElevation;
+        varying vec3 vWorldPosition;
+        varying vec3 vNormal;
+        varying float vFoam;
+
+        void main() {
+          // Depth-based color (shallow vs deep)
+          float depthFactor = smoothstep(-1.0, 1.0, vElevation);
+          vec3 waterColor = mix(uColorDeep, uColorShallow, depthFactor);
+
+          // Add foam on crests
+          waterColor = mix(waterColor, uColorFoam, vFoam * 0.6);
+
+          // Fresnel effect (more reflection at grazing angles)
+          vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+          float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 4.0);
+          vec3 skyColor = vec3(0.5, 0.7, 0.9);
+          waterColor = mix(waterColor, skyColor, fresnel * 0.4);
+
+          // Sun specular highlight
+          vec3 reflectDir = reflect(-uSunDirection, vNormal);
+          float spec = pow(max(dot(viewDir, reflectDir), 0.0), 256.0);
+          waterColor += vec3(1.0, 0.98, 0.9) * spec * 0.8;
+
+          // Subsurface scattering approximation (light through waves)
+          float sss = pow(max(dot(viewDir, -uSunDirection + vNormal * 0.5), 0.0), 3.0);
+          waterColor += vec3(0.0, 0.3, 0.4) * sss * 0.3;
+
+          // Sparkle effect
+          float sparkle = pow(max(dot(viewDir, reflect(-uSunDirection,
+            vNormal + vec3(sin(uTime * 8.0 + vWorldPosition.x * 3.0) * 0.03, 0.0, cos(uTime * 6.0 + vWorldPosition.z * 3.0) * 0.03)
+          )), 0.0), 256.0);
+          waterColor += vec3(1.0) * sparkle * 0.5;
+
+          gl_FragColor = vec4(waterColor, 0.95);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide,
+    })
+  }, [])
+
+  // Animate the water
+  useFrame((state) => {
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime * waveSpeed
+      materialRef.current.uniforms.uWaveHeight.value = waveHeight
+      materialRef.current.uniforms.uChoppiness.value = choppiness
+      materialRef.current.uniforms.uWindDirection.value = windDirection * Math.PI / 180
+    }
+  })
+
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <planeGeometry args={[size, size, segments, segments]} />
+      <primitive object={shaderMaterial} attach="material" ref={materialRef} />
+    </mesh>
+  )
+}
+
 // Alternative simpler water for lower-end devices
 export function SimpleOcean({ size = 500, segments = 128 }: OceanProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null)

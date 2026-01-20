@@ -261,14 +261,66 @@ export function BuildMode() {
               </Section>
 
               <Section title="Performance">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mb-2">
                   <div className="bg-slate-800/50 rounded p-2 text-center">
-                    <div className="text-sm font-bold text-red-400">{stats.dragCoefficient.toFixed(3)}</div>
-                    <div className="text-[9px] text-slate-500">Drag</div>
+                    <div className="text-sm font-bold text-cyan-400">{stats.maxSpeed.toFixed(1)}</div>
+                    <div className="text-[9px] text-slate-500">Max Speed (kts)</div>
                   </div>
                   <div className="bg-slate-800/50 rounded p-2 text-center">
-                    <div className="text-sm font-bold text-blue-400">{stats.stability.toFixed(1)}</div>
-                    <div className="text-[9px] text-slate-500">Stability</div>
+                    <div className="text-sm font-bold text-blue-400">{stats.hullSpeed.toFixed(1)}</div>
+                    <div className="text-[9px] text-slate-500">Hull Speed (kts)</div>
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="Drag Analysis">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Total Drag</span>
+                    <span className="text-red-400 font-mono">{stats.totalDrag.toFixed(0)} N</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Form Drag</span>
+                    <span className="text-slate-400 font-mono">{stats.formDrag.toFixed(0)} N</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Friction</span>
+                    <span className="text-slate-400 font-mono">{stats.frictionDrag.toFixed(0)} N</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Wave Drag</span>
+                    <span className="text-slate-400 font-mono">{stats.waveDrag.toFixed(0)} N</span>
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="Stability">
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="bg-slate-800/50 rounded p-2 text-center">
+                    <div className="text-sm font-bold text-green-400">{stats.stability.toFixed(0)}</div>
+                    <div className="text-[9px] text-slate-500">Index (0-100)</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded p-2 text-center">
+                    <div className={`text-sm font-bold ${
+                      stats.stabilityRating === 'Excellent' ? 'text-green-400' :
+                      stats.stabilityRating === 'Good' ? 'text-cyan-400' :
+                      stats.stabilityRating === 'Fair' ? 'text-yellow-400' : 'text-red-400'
+                    }`}>{stats.stabilityRating}</div>
+                    <div className="text-[9px] text-slate-500">Rating</div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">GM Height</span>
+                    <span className="text-slate-400 font-mono">{stats.metacentricHeight.toFixed(2)} m</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Roll Period</span>
+                    <span className="text-slate-400 font-mono">{stats.rollPeriod.toFixed(1)} s</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Max Heel</span>
+                    <span className="text-slate-400 font-mono">{stats.maxHeelAngle.toFixed(0)}°</span>
                   </div>
                 </div>
               </Section>
