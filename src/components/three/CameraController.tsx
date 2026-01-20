@@ -45,11 +45,12 @@ export function CameraController() {
     if (gameMode !== lastGameMode.current) {
       lastGameMode.current = gameMode
       if (gameMode === 'build') {
-        // Position camera for build mode preview (right side of screen)
+        // Position camera for build mode preview (50/50 split - yacht in right half)
+        // Camera positioned to view yacht from front-left angle
         const buildCameraPos = new THREE.Vector3(
-          yachtPos.x + 15,
-          yachtPos.y + 12,
-          yachtPos.z + 10
+          yachtPos.x + 18,
+          yachtPos.y + 10,
+          yachtPos.z + 8
         )
         camera.position.copy(buildCameraPos)
         controlsRef.current.target.copy(yachtPos)
@@ -57,9 +58,10 @@ export function CameraController() {
       }
     }
 
-    // Build mode: fixed camera angle for preview panel
+    // Build mode: camera targets yacht, user can orbit
     if (gameMode === 'build') {
       controlsRef.current.enabled = true
+      // Smoothly follow yacht position (in case it's moving)
       controlsRef.current.target.lerp(yachtPos, 0.1)
       return
     }

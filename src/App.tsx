@@ -70,11 +70,11 @@ export default function App() {
           <HUD />
         </div>
 
-        {/* Mode Toggle - Always visible */}
-        <div className="absolute top-4 right-4 flex gap-2 z-50">
+        {/* Mode Toggle - Center top */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
           <button
             onClick={() => setGameMode('sail')}
-            className={`px-5 py-2 rounded-lg font-medium transition-all ${
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${
               gameMode === 'sail'
                 ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                 : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700'
@@ -84,7 +84,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setGameMode('build')}
-            className={`px-5 py-2 rounded-lg font-medium transition-all ${
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${
               gameMode === 'build'
                 ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                 : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700'

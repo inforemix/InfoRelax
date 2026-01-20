@@ -20,13 +20,49 @@ const DEFAULT_BLADE_PROFILE: BladePoint[] = [
   { x: 0.3, y: -0.9 },
 ]
 
-// Generate blade mesh from 2D profile
+interface BladeShapeParams {
+  twist: number
+  taper: number
+  sweep: number
+  widthTop: number
+  widthMid: number
+  widthBottom: number
+  angleTop: number
+  angleMid: number
+  angleBottom: number
+}
+
+// Interpolate width at a given height position (0 = bottom, 1 = top)
+function getWidthAtHeight(t: number, params: BladeShapeParams): number {
+  if (t < 0.5) {
+    // Bottom to mid
+    const localT = t * 2
+    return THREE.MathUtils.lerp(params.widthBottom, params.widthMid, localT)
+  } else {
+    // Mid to top
+    const localT = (t - 0.5) * 2
+    return THREE.MathUtils.lerp(params.widthMid, params.widthTop, localT)
+  }
+}
+
+// Interpolate chord angle at a given height position
+function getAngleAtHeight(t: number, params: BladeShapeParams): number {
+  if (t < 0.5) {
+    const localT = t * 2
+    return THREE.MathUtils.lerp(params.angleBottom, params.angleMid, localT)
+  } else {
+    const localT = (t - 0.5) * 2
+    return THREE.MathUtils.lerp(params.angleMid, params.angleTop, localT)
+  }
+}
+
+// Generate blade mesh from 2D profile with advanced parameters
 function generateBladeMesh(
   profile: BladePoint[],
   height: number,
   diameter: number,
   bladeThickness: number = 0.08,
-  helixTwist: number = 45
+  shapeParams: BladeShapeParams
 ): THREE.BufferGeometry {
   const smoothProfile = interpolateSpline(profile.length > 1 ? profile : DEFAULT_BLADE_PROFILE, 8)
 
@@ -34,50 +70,65 @@ function generateBladeMesh(
     return new THREE.BoxGeometry(bladeThickness, height, diameter * 0.2)
   }
 
-  // Convert normalized profile to 3D coordinates
-  // Profile x = radial distance from center, y = height position (0 to -1)
   const vertices: number[] = []
   const indices: number[] = []
 
-  const twistRad = (helixTwist * Math.PI) / 180
+  const twistRad = (shapeParams.twist * Math.PI) / 180
+  const sweepRad = (shapeParams.sweep * Math.PI) / 180
 
   for (let i = 0; i < smoothProfile.length; i++) {
     const point = smoothProfile[i]
-    const t = i / (smoothProfile.length - 1)
+    const t = i / (smoothProfile.length - 1) // 0 at start (top), 1 at end (bottom)
 
     // Height along the turbine (0 at top, height at bottom)
     const y = ((point.y + 1) / 2) * height
 
-    // Radial distance from center
-    const radius = (point.x * diameter) / 2
+    // Get width multiplier for this height
+    const widthMult = getWidthAtHeight(1 - t, shapeParams) // Invert t for bottom-to-top
+
+    // Apply taper (top is thinner)
+    const taperMult = THREE.MathUtils.lerp(1, shapeParams.taper, 1 - t)
+
+    // Radial distance from center with width and taper
+    const baseRadius = (point.x * diameter) / 2
+    const radius = baseRadius * widthMult * taperMult
 
     // Apply helical twist based on height
     const twist = t * twistRad
 
-    // Calculate positions with twist
+    // Apply sweep offset
+    const sweepOffset = t * Math.tan(sweepRad) * height * 0.1
+
+    // Get chord angle at this height
+    const chordAngle = (getAngleAtHeight(1 - t, shapeParams) * Math.PI) / 180
+
+    // Calculate positions with twist, sweep, and chord angle
     const cos = Math.cos(twist)
     const sin = Math.sin(twist)
 
+    // Thickness varies with chord angle
+    const effectiveThickness = bladeThickness * Math.cos(chordAngle)
+    const thicknessOffset = bladeThickness * Math.sin(chordAngle) * 0.5
+
     // Outer edge
     vertices.push(
-      radius * cos,
-      y,
-      radius * sin + bladeThickness / 2
+      radius * cos + sweepOffset,
+      y + thicknessOffset,
+      radius * sin + effectiveThickness / 2
     )
 
-    // Inner edge (slightly closer to center)
-    const innerRadius = Math.max(0.05, radius - bladeThickness)
+    // Inner edge
+    const innerRadius = Math.max(0.05, radius - bladeThickness * widthMult)
     vertices.push(
-      innerRadius * cos,
-      y,
-      innerRadius * sin - bladeThickness / 2
+      innerRadius * cos + sweepOffset,
+      y - thicknessOffset,
+      innerRadius * sin - effectiveThickness / 2
     )
   }
 
   // Create faces
   for (let i = 0; i < smoothProfile.length - 1; i++) {
     const base = i * 2
-    // Front face
     indices.push(base, base + 2, base + 1)
     indices.push(base + 1, base + 2, base + 3)
   }
@@ -94,18 +145,38 @@ export function CustomTurbine({ config, deckHeight, windSpeed }: CustomTurbinePr
   const groupRef = useRef<THREE.Group>(null)
   const bladesRef = useRef<THREE.Group>(null)
 
-  const { height, diameter, bladeCount, bladeProfile, material } = config
+  const {
+    height, diameter, bladeCount, bladeProfile, material,
+    twist, taper, sweep,
+    widthTop, widthMid, widthBottom,
+    angleTop, angleMid, angleBottom
+  } = config
 
-  // Generate blade geometry from profile
+  // Shape parameters object
+  const shapeParams: BladeShapeParams = {
+    twist: twist ?? 45,
+    taper: taper ?? 0.8,
+    sweep: sweep ?? 0,
+    widthTop: widthTop ?? 1.0,
+    widthMid: widthMid ?? 1.0,
+    widthBottom: widthBottom ?? 1.0,
+    angleTop: angleTop ?? 0,
+    angleMid: angleMid ?? 0,
+    angleBottom: angleBottom ?? 0,
+  }
+
+  // Generate blade geometry from profile with shape params
   const bladeGeometry = useMemo(() => {
     return generateBladeMesh(
       bladeProfile.length > 0 ? bladeProfile : DEFAULT_BLADE_PROFILE,
       height * 0.85,
       diameter,
-      0.08,
-      50
+      0.1,
+      shapeParams
     )
-  }, [bladeProfile, height, diameter])
+  }, [bladeProfile, height, diameter, shapeParams.twist, shapeParams.taper, shapeParams.sweep,
+      shapeParams.widthTop, shapeParams.widthMid, shapeParams.widthBottom,
+      shapeParams.angleTop, shapeParams.angleMid, shapeParams.angleBottom])
 
   // Material based on config
   const bladeMaterial = useMemo(() => {

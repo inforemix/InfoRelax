@@ -3,25 +3,6 @@ import { useYachtStore, HullType } from '@/state/useYachtStore'
 import { KaleidoscopeCanvas } from '@/editor/KaleidoscopeCanvas'
 import { BLADE_PRESETS, BladePreset } from '@/editor/BladePresets'
 
-// Visual bar indicator component
-function StatBar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
-  const percentage = Math.min((value / max) * 100, 100)
-  return (
-    <div className="mb-2">
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-slate-400">{label}</span>
-        <span className="text-white font-mono">{value.toFixed(2)}</span>
-      </div>
-      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-300 ${color}`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
 // Slider component for consistent styling
 function Slider({
   label,
@@ -41,10 +22,10 @@ function Slider({
   onChange: (value: number) => void
 }) {
   return (
-    <div className="mb-3">
-      <div className="flex justify-between text-xs mb-1">
+    <div className="mb-2">
+      <div className="flex justify-between text-xs mb-0.5">
         <span className="text-slate-400">{label}</span>
-        <span className="text-white font-mono">{value}{unit}</span>
+        <span className="text-white font-mono text-[11px]">{value.toFixed(step < 1 ? 1 : 0)}{unit}</span>
       </div>
       <input
         type="range"
@@ -53,19 +34,62 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+        className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
       />
     </div>
   )
 }
 
+// Compact slider for section controls
+function MiniSlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  step: number
+  onChange: (value: number) => void
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-slate-500 w-8">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+      />
+      <span className="text-[10px] text-slate-400 w-8 text-right font-mono">{value.toFixed(1)}</span>
+    </div>
+  )
+}
+
+// Section group component
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-4">
+      <h4 className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">{title}</h4>
+      {children}
+    </div>
+  )
+}
+
 // Tab type for the editor panels
-type EditorTab = 'hull' | 'turbine' | 'power'
+type EditorTab = 'design' | 'shape' | 'hull'
 
 export function BuildMode() {
-  const { currentYacht, setHull, setTurbine, setSolar, setBladeProfile, stats } = useYachtStore()
-  const { hull, turbine, solar } = currentYacht
-  const [activeTab, setActiveTab] = useState<EditorTab>('turbine')
+  const { currentYacht, setHull, setTurbine, setBladeProfile, stats } = useYachtStore()
+  const { hull, turbine } = currentYacht
+  const [activeTab, setActiveTab] = useState<EditorTab>('design')
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
 
   // Handle blade profile changes
@@ -82,178 +106,324 @@ export function BuildMode() {
 
   return (
     <div className="absolute inset-0 flex pointer-events-auto">
-      {/* Left Panel - Editor (2/3 width) */}
-      <div className="w-2/3 h-full bg-slate-900/95 backdrop-blur-md flex flex-col">
-        {/* Header with tabs */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
-          <h1 className="text-xl font-bold text-white">Yacht Builder</h1>
-          <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1">
-            {(['hull', 'turbine', 'power'] as EditorTab[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all capitalize ${
-                  activeTab === tab
-                    ? 'bg-cyan-500 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+      {/* Left Panel - Editor (50% width) */}
+      <div className="w-1/2 h-full bg-slate-900/95 backdrop-blur-md flex flex-col">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 px-4 py-3 border-b border-slate-700/50">
+          {(['design', 'shape', 'hull'] as EditorTab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all capitalize ${
+                activeTab === tab
+                  ? 'bg-cyan-500 text-white'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              {tab === 'design' ? 'Blade Design' : tab === 'shape' ? 'Blade Shape' : 'Hull'}
+            </button>
+          ))}
         </div>
 
-        {/* Main Editor Area */}
-        <div className="flex-1 overflow-hidden flex">
-          {/* Kaleidoscope Editor - Always visible when on turbine tab */}
-          {activeTab === 'turbine' && (
-            <div className="flex-1 flex">
-              {/* Canvas Area */}
-              <div className="flex-1 p-6 flex flex-col items-center justify-center bg-slate-950/50">
-                <h3 className="text-sm font-semibold text-slate-300 mb-4">
-                  Kaleidoscope Blade Editor
-                </h3>
-                <KaleidoscopeCanvas
-                  bladeCount={turbine.bladeCount}
-                  initialPoints={turbine.bladeProfile}
-                  onPointsChange={handleBladeChange}
-                  size={360}
-                />
-                <p className="text-xs text-slate-500 mt-3 text-center max-w-sm">
-                  Draw from center outward to design your blade. The pattern mirrors with {turbine.bladeCount}-way symmetry ({360 / turbine.bladeCount}°).
-                </p>
-              </div>
-
-              {/* Turbine Controls */}
-              <div className="w-72 p-4 border-l border-slate-700/50 overflow-y-auto">
-                <h3 className="text-sm font-semibold text-slate-300 mb-4">Turbine Settings</h3>
-
-                {/* Turbine Style */}
-                <div className="mb-4">
-                  <label className="text-xs text-slate-400 mb-2 block">Style</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {([
-                      { style: 'helix', label: 'Helix', locked: false },
-                      { style: 'infinity', label: 'Infinity', locked: true },
-                      { style: 'ribbon', label: 'Ribbon', locked: true },
-                    ] as const).map(({ style, label, locked }) => (
-                      <button
-                        key={style}
-                        onClick={() => !locked && setTurbine({ style })}
-                        className={`px-2 py-2 rounded-lg text-xs transition-all ${
-                          turbine.style === style
-                            ? 'bg-cyan-500 text-white'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                        } ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        disabled={locked}
-                      >
-                        {label}
-                        {locked && <span className="block text-[9px]">Locked</span>}
-                      </button>
-                    ))}
-                  </div>
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Design Tab - Kaleidoscope Editor */}
+          {activeTab === 'design' && (
+            <div className="p-4">
+              <div className="flex gap-4">
+                {/* Canvas */}
+                <div className="flex-shrink-0">
+                  <KaleidoscopeCanvas
+                    bladeCount={turbine.bladeCount}
+                    initialPoints={turbine.bladeProfile}
+                    onPointsChange={handleBladeChange}
+                    size={300}
+                  />
+                  <p className="text-[10px] text-slate-500 mt-2 text-center">
+                    Draw from center • {turbine.bladeCount}-way symmetry ({360 / turbine.bladeCount}°)
+                  </p>
                 </div>
 
-                <Slider
-                  label="Height"
-                  value={turbine.height}
-                  min={5}
-                  max={15}
-                  step={0.5}
-                  unit="m"
-                  onChange={(v) => setTurbine({ height: v })}
-                />
+                {/* Quick Settings & Presets */}
+                <div className="flex-1 min-w-0">
+                  <Section title="Turbine Size">
+                    <Slider
+                      label="Height"
+                      value={turbine.height}
+                      min={5}
+                      max={15}
+                      step={0.5}
+                      unit="m"
+                      onChange={(v) => setTurbine({ height: v })}
+                    />
+                    <Slider
+                      label="Diameter"
+                      value={turbine.diameter}
+                      min={1}
+                      max={4}
+                      step={0.5}
+                      unit="m"
+                      onChange={(v) => setTurbine({ diameter: v })}
+                    />
+                  </Section>
 
-                <Slider
-                  label="Diameter"
-                  value={turbine.diameter}
-                  min={1}
-                  max={4}
-                  step={0.5}
-                  unit="m"
-                  onChange={(v) => setTurbine({ diameter: v })}
-                />
+                  <Section title="Blade Count">
+                    <div className="flex gap-1">
+                      {[2, 3, 4, 5, 6].map((count) => (
+                        <button
+                          key={count}
+                          onClick={() => setTurbine({ bladeCount: count })}
+                          className={`flex-1 py-1.5 rounded text-sm font-medium transition-all ${
+                            turbine.bladeCount === count
+                              ? 'bg-cyan-500 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          {count}
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
 
-                {/* Blade Count */}
-                <div className="mb-4">
-                  <label className="text-xs text-slate-400 mb-2 block">Blade Count</label>
-                  <div className="flex gap-1">
-                    {[2, 3, 4, 5, 6].map((count) => (
-                      <button
-                        key={count}
-                        onClick={() => setTurbine({ bladeCount: count })}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                          turbine.bladeCount === count
-                            ? 'bg-cyan-500 text-white'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                        }`}
-                      >
-                        {count}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  <Section title="Presets">
+                    <div className="grid grid-cols-4 gap-1">
+                      {BLADE_PRESETS.slice(0, 8).map((preset) => (
+                        <button
+                          key={preset.id}
+                          onClick={() => loadPreset(preset)}
+                          className={`p-1.5 rounded text-center transition-all ${
+                            selectedPreset === preset.id
+                              ? 'bg-purple-500 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                          title={preset.description}
+                        >
+                          <span className="text-sm">{preset.icon}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
 
-                {/* Blade Presets */}
-                <div className="mb-4">
-                  <label className="text-xs text-slate-400 mb-2 block">Blade Presets</label>
-                  <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto">
-                    {BLADE_PRESETS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        onClick={() => loadPreset(preset)}
-                        className={`p-1.5 rounded-lg text-center transition-all ${
-                          selectedPreset === preset.id
-                            ? 'bg-purple-500 text-white'
-                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
-                        }`}
-                        title={preset.description}
-                      >
-                        <span className="text-base">{preset.icon}</span>
-                        <span className="block text-[9px] truncate">{preset.name}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <Section title="Material">
+                    <div className="flex gap-1">
+                      {(['solar', 'chrome', 'led'] as const).map((mat) => (
+                        <button
+                          key={mat}
+                          onClick={() => setTurbine({ material: mat })}
+                          className={`flex-1 py-1.5 rounded text-xs font-medium transition-all capitalize ${
+                            turbine.material === mat
+                              ? 'bg-cyan-500 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          {mat}
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Hull Tab Content */}
-          {activeTab === 'hull' && (
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="max-w-2xl mx-auto">
-                {/* Hull Type Selection */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-300 mb-3">Hull Type</h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    {(['monohull', 'catamaran', 'trimaran', 'hydrofoil'] as HullType[]).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setHull({ type })}
-                        className={`p-4 rounded-xl text-center transition-all ${
-                          hull.type === type
-                            ? 'bg-cyan-500 text-white ring-2 ring-cyan-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        } ${type === 'hydrofoil' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        disabled={type === 'hydrofoil'}
-                      >
-                        <span className="text-2xl block mb-1">
-                          {type === 'monohull' && '⛵'}
-                          {type === 'catamaran' && '🚤'}
-                          {type === 'trimaran' && '⛴️'}
-                          {type === 'hydrofoil' && '🔒'}
-                        </span>
-                        <span className="text-sm capitalize font-medium">{type}</span>
-                      </button>
-                    ))}
-                  </div>
+          {/* Shape Tab - Advanced Blade Parameters */}
+          {activeTab === 'shape' && (
+            <div className="p-4">
+              <div className="grid grid-cols-2 gap-6">
+                {/* Global Shape */}
+                <div>
+                  <Section title="Global Shape">
+                    <Slider
+                      label="Helical Twist"
+                      value={turbine.twist ?? 45}
+                      min={0}
+                      max={120}
+                      step={5}
+                      unit="°"
+                      onChange={(v) => setTurbine({ twist: v })}
+                    />
+                    <Slider
+                      label="Taper (top/bottom)"
+                      value={turbine.taper ?? 0.8}
+                      min={0.3}
+                      max={1.0}
+                      step={0.1}
+                      unit=""
+                      onChange={(v) => setTurbine({ taper: v })}
+                    />
+                    <Slider
+                      label="Sweep Angle"
+                      value={turbine.sweep ?? 0}
+                      min={-30}
+                      max={30}
+                      step={5}
+                      unit="°"
+                      onChange={(v) => setTurbine({ sweep: v })}
+                    />
+                  </Section>
+
+                  <Section title="Turbine Style">
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { style: 'helix', label: 'Helix', locked: false },
+                        { style: 'infinity', label: 'Infinity', locked: true },
+                        { style: 'ribbon', label: 'Ribbon', locked: true },
+                      ] as const).map(({ style, label, locked }) => (
+                        <button
+                          key={style}
+                          onClick={() => !locked && setTurbine({ style })}
+                          className={`px-2 py-2 rounded-lg text-xs transition-all ${
+                            turbine.style === style
+                              ? 'bg-cyan-500 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          } ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={locked}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
                 </div>
 
-                {/* Hull Dimensions */}
-                <div className="grid grid-cols-3 gap-6 mb-6">
-                  <div>
+                {/* Section Controls */}
+                <div>
+                  <Section title="Width by Section">
+                    <div className="space-y-1.5 bg-slate-800/50 rounded-lg p-3">
+                      <MiniSlider
+                        label="Top"
+                        value={turbine.widthTop ?? 1.0}
+                        min={0.5}
+                        max={2.0}
+                        step={0.1}
+                        onChange={(v) => setTurbine({ widthTop: v })}
+                      />
+                      <MiniSlider
+                        label="Mid"
+                        value={turbine.widthMid ?? 1.0}
+                        min={0.5}
+                        max={2.0}
+                        step={0.1}
+                        onChange={(v) => setTurbine({ widthMid: v })}
+                      />
+                      <MiniSlider
+                        label="Bot"
+                        value={turbine.widthBottom ?? 1.0}
+                        min={0.5}
+                        max={2.0}
+                        step={0.1}
+                        onChange={(v) => setTurbine({ widthBottom: v })}
+                      />
+                    </div>
+                  </Section>
+
+                  <Section title="Chord Angle by Section">
+                    <div className="space-y-1.5 bg-slate-800/50 rounded-lg p-3">
+                      <MiniSlider
+                        label="Top"
+                        value={turbine.angleTop ?? 0}
+                        min={-45}
+                        max={45}
+                        step={5}
+                        onChange={(v) => setTurbine({ angleTop: v })}
+                      />
+                      <MiniSlider
+                        label="Mid"
+                        value={turbine.angleMid ?? 0}
+                        min={-45}
+                        max={45}
+                        step={5}
+                        onChange={(v) => setTurbine({ angleMid: v })}
+                      />
+                      <MiniSlider
+                        label="Bot"
+                        value={turbine.angleBottom ?? 0}
+                        min={-45}
+                        max={45}
+                        step={5}
+                        onChange={(v) => setTurbine({ angleBottom: v })}
+                      />
+                    </div>
+                  </Section>
+
+                  {/* Reset Button */}
+                  <button
+                    onClick={() => setTurbine({
+                      twist: 45,
+                      taper: 0.8,
+                      sweep: 0,
+                      widthTop: 1.0,
+                      widthMid: 1.0,
+                      widthBottom: 1.0,
+                      angleTop: 0,
+                      angleMid: 0,
+                      angleBottom: 0,
+                    })}
+                    className="w-full mt-2 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition-all"
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Hull Tab */}
+          {activeTab === 'hull' && (
+            <div className="p-4">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <Section title="Hull Type">
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['monohull', 'catamaran', 'trimaran', 'hydrofoil'] as HullType[]).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setHull({ type })}
+                          className={`p-3 rounded-lg text-center transition-all ${
+                            hull.type === type
+                              ? 'bg-cyan-500 text-white ring-1 ring-cyan-400'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          } ${type === 'hydrofoil' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={type === 'hydrofoil'}
+                        >
+                          <span className="text-lg block">
+                            {type === 'monohull' && '⛵'}
+                            {type === 'catamaran' && '🚤'}
+                            {type === 'trimaran' && '⛴️'}
+                            {type === 'hydrofoil' && '🔒'}
+                          </span>
+                          <span className="text-xs capitalize">{type}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
+
+                  <Section title="Bow Shape">
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { shape: 'piercing', icon: '🏎️' },
+                        { shape: 'flared', icon: '🌊' },
+                        { shape: 'bulbous', icon: '💡' },
+                      ] as const).map(({ shape, icon }) => (
+                        <button
+                          key={shape}
+                          onClick={() => setHull({ bowShape: shape })}
+                          className={`p-2 rounded-lg text-center transition-all ${
+                            hull.bowShape === shape
+                              ? 'bg-cyan-500 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          <span className="text-lg">{icon}</span>
+                          <span className="block text-[10px] capitalize">{shape}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
+                </div>
+
+                <div>
+                  <Section title="Dimensions">
                     <Slider
                       label="Length"
                       value={hull.length}
@@ -263,8 +433,6 @@ export function BuildMode() {
                       unit="m"
                       onChange={(v) => setHull({ length: v })}
                     />
-                  </div>
-                  <div>
                     <Slider
                       label="Beam (Width)"
                       value={hull.beam}
@@ -274,8 +442,6 @@ export function BuildMode() {
                       unit="m"
                       onChange={(v) => setHull({ beam: v })}
                     />
-                  </div>
-                  <div>
                     <Slider
                       label="Draft (Depth)"
                       value={hull.draft}
@@ -285,100 +451,20 @@ export function BuildMode() {
                       unit="m"
                       onChange={(v) => setHull({ draft: v })}
                     />
-                  </div>
-                </div>
+                  </Section>
 
-                {/* Bow Shape */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-300 mb-3">Bow Shape</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {([
-                      { shape: 'piercing', label: 'Piercing', desc: 'Optimized for speed', icon: '🏎️' },
-                      { shape: 'flared', label: 'Flared', desc: 'Better wave handling', icon: '🌊' },
-                      { shape: 'bulbous', label: 'Bulbous', desc: 'Fuel efficiency', icon: '💡' },
-                    ] as const).map(({ shape, label, desc, icon }) => (
-                      <button
-                        key={shape}
-                        onClick={() => setHull({ bowShape: shape })}
-                        className={`p-4 rounded-xl text-left transition-all ${
-                          hull.bowShape === shape
-                            ? 'bg-cyan-500 text-white'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        <span className="text-xl">{icon}</span>
-                        <span className="block text-sm font-medium mt-1">{label}</span>
-                        <span className="block text-xs opacity-70">{desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Hull Performance */}
-                <div className="bg-slate-800/50 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-slate-300 mb-3">Hull Performance</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <StatBar
-                      value={stats.dragCoefficient}
-                      max={0.15}
-                      color="bg-red-500"
-                      label="Drag Coefficient"
-                    />
-                    <StatBar
-                      value={stats.stability}
-                      max={50}
-                      color="bg-blue-500"
-                      label="Stability Rating"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Power Tab Content */}
-          {activeTab === 'power' && (
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="max-w-2xl mx-auto">
-                {/* Solar Panels */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-300 mb-3">Solar Panels</h3>
-                  <div className="bg-slate-800/50 rounded-xl p-4">
-                    <Slider
-                      label="Deck Coverage"
-                      value={solar.deckCoverage}
-                      min={0}
-                      max={100}
-                      step={10}
-                      unit="%"
-                      onChange={(v) => setSolar({ deckCoverage: v })}
-                    />
-
-                    <label className="flex items-center gap-3 cursor-pointer mt-3">
-                      <input
-                        type="checkbox"
-                        checked={solar.turbineIntegrated}
-                        onChange={(e) => setSolar({ turbineIntegrated: e.target.checked })}
-                        className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-cyan-500 focus:ring-cyan-500"
-                      />
-                      <span className="text-sm text-slate-300">Turbine-integrated panels</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Power Stats */}
-                <div className="bg-slate-800/50 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-slate-300 mb-3">Power Output</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-slate-900/50 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-400">{stats.solarOutput.toFixed(1)}</div>
-                      <div className="text-xs text-slate-400">Solar kW (peak)</div>
+                  <Section title="Performance">
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                      <div className="bg-slate-800/50 rounded-lg p-2">
+                        <div className="text-lg font-bold text-red-400">{stats.dragCoefficient.toFixed(3)}</div>
+                        <div className="text-[10px] text-slate-500">Drag</div>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-lg p-2">
+                        <div className="text-lg font-bold text-blue-400">{stats.stability.toFixed(1)}</div>
+                        <div className="text-[10px] text-slate-500">Stability</div>
+                      </div>
                     </div>
-                    <div className="text-center p-3 bg-slate-900/50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-400">{(stats.turbineEfficiency * 100).toFixed(0)}%</div>
-                      <div className="text-xs text-slate-400">Turbine Efficiency</div>
-                    </div>
-                  </div>
+                  </Section>
                 </div>
               </div>
             </div>
@@ -386,44 +472,30 @@ export function BuildMode() {
         </div>
 
         {/* Footer Stats */}
-        <div className="px-6 py-3 border-t border-slate-700/50 bg-slate-800/30">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-8">
-              <div>
-                <span className="text-xs text-slate-400">Max Speed</span>
-                <span className="text-lg font-bold text-cyan-400 ml-2">{stats.maxSpeed.toFixed(1)} kts</span>
-              </div>
-              <div>
-                <span className="text-xs text-slate-400">Range</span>
-                <span className="text-lg font-bold text-yellow-400 ml-2">{stats.range.toFixed(0)} km</span>
-              </div>
-              <div>
-                <span className="text-xs text-slate-400">Efficiency</span>
-                <span className="text-lg font-bold text-green-400 ml-2">{(stats.turbineEfficiency * 100).toFixed(0)}%</span>
-              </div>
+        <div className="px-4 py-2 border-t border-slate-700/50 bg-slate-800/30">
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex gap-6">
+              <span><span className="text-slate-500">Speed</span> <span className="text-cyan-400 font-bold">{stats.maxSpeed.toFixed(1)} kts</span></span>
+              <span><span className="text-slate-500">Range</span> <span className="text-yellow-400 font-bold">{stats.range.toFixed(0)} km</span></span>
+              <span><span className="text-slate-500">Efficiency</span> <span className="text-green-400 font-bold">{(stats.turbineEfficiency * 100).toFixed(0)}%</span></span>
             </div>
-            <button className="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white font-medium transition-all">
-              Save Design
+            <button className="px-4 py-1.5 bg-green-600 hover:bg-green-500 rounded text-white font-medium transition-all">
+              Save
             </button>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - 3D Preview (1/3 width) */}
-      <div className="w-1/3 h-full relative">
-        {/* This area is transparent to show the 3D canvas behind */}
-        <div className="absolute inset-0 pointer-events-none" />
-
+      {/* Right Panel - 3D Preview (50% width) */}
+      <div className="w-1/2 h-full relative">
         {/* Preview label */}
         <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
           <span className="text-xs text-slate-400">Live Preview</span>
         </div>
 
-        {/* Rotation hint */}
-        <div className="absolute bottom-4 left-4 right-4 bg-slate-900/80 backdrop-blur-sm px-3 py-2 rounded-lg">
-          <p className="text-xs text-slate-400 text-center">
-            Drag to rotate • Scroll to zoom
-          </p>
+        {/* Controls hint */}
+        <div className="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+          <p className="text-[10px] text-slate-500">Drag to rotate • Scroll to zoom</p>
         </div>
       </div>
     </div>
