@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useYachtStore, HullType } from '@/state/useYachtStore'
+import { KaleidoscopeModal } from '@/editor'
 
 // Visual bar indicator component
 function StatBar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
@@ -20,8 +22,9 @@ function StatBar({ value, max, color, label }: { value: number; max: number; col
 }
 
 export function BuilderPanel() {
-  const { currentYacht, setHull, setTurbine, setSolar, stats } = useYachtStore()
+  const { currentYacht, setHull, setTurbine, setSolar, setBladeProfile, stats } = useYachtStore()
   const { hull, turbine, solar } = currentYacht
+  const [isKaleidoscopeOpen, setIsKaleidoscopeOpen] = useState(false)
 
   return (
     <div className="absolute left-4 top-20 bottom-20 w-80 glass rounded-2xl p-4 overflow-y-auto pointer-events-auto">
@@ -114,7 +117,7 @@ export function BuilderPanel() {
           <input
             type="range"
             min="2"
-            max="6"
+            max="12"
             step="0.5"
             value={hull.beam}
             onChange={(e) => setHull({ beam: parseFloat(e.target.value) })}
@@ -205,8 +208,8 @@ export function BuilderPanel() {
           </div>
           <input
             type="range"
-            min="2"
-            max="8"
+            min="5"
+            max="15"
             step="0.5"
             value={turbine.height}
             onChange={(e) => setTurbine({ height: parseFloat(e.target.value) })}
@@ -255,9 +258,21 @@ export function BuilderPanel() {
         </div>
 
         {/* Kaleidoscope Editor Button */}
-        <button className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-medium transition-all">
-          ✨ Open Kaleidoscope Editor
+        <button
+          onClick={() => setIsKaleidoscopeOpen(true)}
+          className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-medium transition-all"
+        >
+          Open Kaleidoscope Editor
         </button>
+
+        {/* Kaleidoscope Modal */}
+        <KaleidoscopeModal
+          isOpen={isKaleidoscopeOpen}
+          onClose={() => setIsKaleidoscopeOpen(false)}
+          bladeCount={turbine.bladeCount}
+          currentPoints={turbine.bladeProfile}
+          onSave={setBladeProfile}
+        />
       </section>
 
       {/* Solar Section */}

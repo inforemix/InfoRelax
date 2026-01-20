@@ -17,7 +17,7 @@ export interface BladePoint {
 export interface HullConfig {
   type: HullType
   length: number      // 6-20 meters
-  beam: number        // 2-6 meters
+  beam: number        // 2-12 meters
   draft: number       // 0.5-2 meters
   bowShape: 'piercing' | 'flared' | 'bulbous'
 }
@@ -25,7 +25,7 @@ export interface HullConfig {
 // Turbine configuration
 export interface TurbineConfig {
   style: TurbineStyle
-  height: number      // 2-8 meters
+  height: number      // 5-15 meters
   diameter: number    // 1-4 meters
   bladeCount: number  // 2-6 blades
   bladeProfile: BladePoint[]  // Custom blade shape from Kaleidoscope
@@ -79,7 +79,7 @@ const defaultYacht: YachtConfig = {
   },
   turbine: {
     style: 'helix',
-    height: 4,
+    height: 8,
     diameter: 2,
     bladeCount: 3,
     bladeProfile: [], // Empty = use preset
