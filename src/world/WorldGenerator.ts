@@ -109,20 +109,28 @@ function createElevationFunction(
   _seed: number
 ) {
   return (x: number, z: number): number => {
-    const dx = x - centerX;
-    const dz = z - centerZ;
-    const distToCenter = Math.sqrt(dx * dx + dz * dz);
+    try {
+      const dx = x - centerX;
+      const dz = z - centerZ;
+      const distToCenter = Math.sqrt(dx * dx + dz * dz);
 
-    if (distToCenter > radius) return 0;
+      if (distToCenter > radius) return 0;
 
-    // Smooth falloff from center to edge
-    const normalizedDist = distToCenter / radius;
-    const falloff = Math.cos(normalizedDist * Math.PI * 0.5) ** 2;
+      // Smooth falloff from center to edge
+      const normalizedDist = distToCenter / radius;
+      const falloff = Math.cos(normalizedDist * Math.PI * 0.5) ** 2;
 
-    // Add Perlin noise for terrain variation
-    const noiseVal = perlin.noise(x / 100, z / 100) * 0.5;
+      // Add Perlin noise for terrain variation
+      const noiseVal = perlin.noise(x / 100, z / 100) * 0.5;
 
-    return maxHeight * falloff * (0.8 + noiseVal);
+      const result = maxHeight * falloff * (0.8 + noiseVal);
+
+      // Safety check for NaN or invalid values
+      return isNaN(result) || !isFinite(result) ? 0 : result;
+    } catch (error) {
+      console.error('Error calculating elevation:', error);
+      return 0;
+    }
   };
 }
 
