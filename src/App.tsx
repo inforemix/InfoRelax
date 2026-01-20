@@ -10,6 +10,7 @@ import { WindIndicator } from './components/three/WindIndicator'
 import { CameraController } from './components/three/CameraController'
 import { Islands } from './components/three/Islands'
 import { Marina } from './components/three/Marina'
+import { EnvironmentDetails } from './components/three/EnvironmentDetails'
 import { PointsOfInterest } from './components/three/PointsOfInterest'
 import { RaceCheckpoints } from './components/three/RaceCheckpoints'
 import { HUD } from './components/ui/HUD'
@@ -83,6 +84,7 @@ export default function App() {
           {/* World */}
           <Islands />
           <Marina />
+          <EnvironmentDetails />
           <PointsOfInterest />
 
           {/* Player Yacht */}
