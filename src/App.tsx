@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { Sky, Stars } from '@react-three/drei'
-import { Suspense, useState } from 'react'
+import { Suspense } from 'react'
 import { Leva } from 'leva'
 
 // Components
@@ -9,17 +9,14 @@ import { Yacht } from './components/three/Yacht'
 import { WindIndicator } from './components/three/WindIndicator'
 import { CameraController } from './components/three/CameraController'
 import { HUD } from './components/ui/HUD'
-import { BuilderPanel } from './components/ui/BuilderPanel'
+import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
 
-type GameMode = 'sail' | 'build'
-
 export default function App() {
-  const [mode, setMode] = useState<GameMode>('sail')
-  const { timeOfDay } = useGameStore()
+  const { timeOfDay, gameMode, setGameMode } = useGameStore()
 
   return (
     <div className="w-full h-full relative">
@@ -68,35 +65,37 @@ export default function App() {
 
       {/* Loading Screen */}
       <Suspense fallback={<LoadingScreen />}>
-        {/* UI Overlay */}
-        <HUD />
+        {/* Sail Mode UI (blurred when in build mode) */}
+        <div className={`transition-all duration-300 ${gameMode === 'build' ? 'opacity-0 pointer-events-none' : ''}`}>
+          <HUD />
+        </div>
 
-        {/* Mode Toggle */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2">
+        {/* Mode Toggle - Center top */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
           <button
-            onClick={() => setMode('sail')}
+            onClick={() => setGameMode('sail')}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
-              mode === 'sail'
-                ? 'bg-cyan-500 text-white'
-                : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+              gameMode === 'sail'
+                ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+                : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            🌊 Sail
+            Sail
           </button>
           <button
-            onClick={() => setMode('build')}
+            onClick={() => setGameMode('build')}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
-              mode === 'build'
-                ? 'bg-cyan-500 text-white'
-                : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+              gameMode === 'build'
+                ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+                : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            🔧 Build
+            Build
           </button>
         </div>
 
-        {/* Builder Panel (when in build mode) */}
-        {mode === 'build' && <BuilderPanel />}
+        {/* Build Mode UI */}
+        {gameMode === 'build' && <BuildMode />}
       </Suspense>
     </div>
   )

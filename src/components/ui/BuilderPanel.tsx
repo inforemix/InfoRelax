@@ -1,15 +1,37 @@
+import { useState } from 'react'
 import { useYachtStore, HullType } from '@/state/useYachtStore'
+import { KaleidoscopeModal } from '@/editor'
+
+// Visual bar indicator component
+function StatBar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
+  const percentage = Math.min((value / max) * 100, 100)
+  return (
+    <div className="mb-2">
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-slate-400">{label}</span>
+        <span className="text-white">{value.toFixed(2)}</span>
+      </div>
+      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-300 ${color}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 export function BuilderPanel() {
-  const { currentYacht, setHull, setTurbine, setSolar, stats } = useYachtStore()
+  const { currentYacht, setHull, setTurbine, setSolar, setBladeProfile, stats } = useYachtStore()
   const { hull, turbine, solar } = currentYacht
+  const [isKaleidoscopeOpen, setIsKaleidoscopeOpen] = useState(false)
 
   return (
     <div className="absolute left-4 top-20 bottom-20 w-80 glass rounded-2xl p-4 overflow-y-auto pointer-events-auto">
-      <h2 className="text-xl font-bold text-white mb-4">🔧 Yacht Builder</h2>
+      <h2 className="text-xl font-bold text-white mb-4">Yacht Builder</h2>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-3 gap-2 mb-6 p-3 bg-slate-800/50 rounded-xl">
+      <div className="grid grid-cols-3 gap-2 mb-4 p-3 bg-slate-800/50 rounded-xl">
         <div className="text-center">
           <div className="text-lg font-bold text-cyan-400">{stats.maxSpeed.toFixed(1)}</div>
           <div className="text-xs text-slate-400">Max Speed</div>
@@ -22,6 +44,23 @@ export function BuilderPanel() {
           <div className="text-lg font-bold text-yellow-400">{stats.range.toFixed(0)}</div>
           <div className="text-xs text-slate-400">Range (km)</div>
         </div>
+      </div>
+
+      {/* Drag & Stability Indicators */}
+      <div className="mb-6 p-3 bg-slate-800/50 rounded-xl">
+        <h4 className="text-xs font-semibold text-slate-300 mb-2">Hull Performance</h4>
+        <StatBar
+          value={stats.dragCoefficient}
+          max={0.15}
+          color="bg-red-500"
+          label="Drag (lower is better)"
+        />
+        <StatBar
+          value={stats.stability}
+          max={50}
+          color="bg-blue-500"
+          label="Stability"
+        />
       </div>
 
       {/* Hull Section */}
@@ -78,7 +117,7 @@ export function BuilderPanel() {
           <input
             type="range"
             min="2"
-            max="6"
+            max="12"
             step="0.5"
             value={hull.beam}
             onChange={(e) => setHull({ beam: parseFloat(e.target.value) })}
@@ -101,6 +140,31 @@ export function BuilderPanel() {
             onChange={(e) => setHull({ draft: parseFloat(e.target.value) })}
             className="w-full"
           />
+        </div>
+
+        {/* Bow Shape */}
+        <div className="mb-3">
+          <label className="text-xs text-slate-400 mb-1 block">Bow Shape</label>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { shape: 'piercing', label: 'Piercing', desc: 'Speed' },
+              { shape: 'flared', label: 'Flared', desc: 'Waves' },
+              { shape: 'bulbous', label: 'Bulbous', desc: 'Efficiency' },
+            ] as const).map(({ shape, label, desc }) => (
+              <button
+                key={shape}
+                onClick={() => setHull({ bowShape: shape })}
+                className={`px-2 py-2 rounded-lg text-xs transition-all ${
+                  hull.bowShape === shape
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                {label}
+                <span className="block text-[10px] opacity-70">{desc}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -144,8 +208,8 @@ export function BuilderPanel() {
           </div>
           <input
             type="range"
-            min="2"
-            max="8"
+            min="5"
+            max="15"
             step="0.5"
             value={turbine.height}
             onChange={(e) => setTurbine({ height: parseFloat(e.target.value) })}
@@ -194,9 +258,21 @@ export function BuilderPanel() {
         </div>
 
         {/* Kaleidoscope Editor Button */}
-        <button className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-medium transition-all">
-          ✨ Open Kaleidoscope Editor
+        <button
+          onClick={() => setIsKaleidoscopeOpen(true)}
+          className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-medium transition-all"
+        >
+          Open Kaleidoscope Editor
         </button>
+
+        {/* Kaleidoscope Modal */}
+        <KaleidoscopeModal
+          isOpen={isKaleidoscopeOpen}
+          onClose={() => setIsKaleidoscopeOpen(false)}
+          bladeCount={turbine.bladeCount}
+          currentPoints={turbine.bladeProfile}
+          onSave={setBladeProfile}
+        />
       </section>
 
       {/* Solar Section */}

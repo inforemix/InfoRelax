@@ -11,11 +11,12 @@ export function CameraController() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const { camera } = useThree()
 
-  const { player, cameraMode, toggleCameraMode } = useGameStore()
+  const { player, cameraMode, gameMode, toggleCameraMode } = useGameStore()
   const keys = useKeyboard()
 
   // Track if we need to reset camera
   const shouldReset = useRef(false)
+  const lastGameMode = useRef(gameMode)
 
   // Handle V key for camera mode toggle
   useEffect(() => {
@@ -39,6 +40,38 @@ export function CameraController() {
       player.position[1],
       player.position[2]
     )
+
+    // Handle game mode changes - reset camera when switching to build mode
+    if (gameMode !== lastGameMode.current) {
+      lastGameMode.current = gameMode
+      if (gameMode === 'build') {
+        // Position camera for build mode preview (1/3 editor, 2/3 preview)
+        // Camera positioned to place yacht on the right side of the preview area
+        // Offset camera to the left so yacht appears on the right
+        const buildCameraPos = new THREE.Vector3(
+          yachtPos.x - 12,  // Offset left to push yacht right in view
+          yachtPos.y + 12,
+          yachtPos.z + 20
+        )
+        camera.position.copy(buildCameraPos)
+        // Target slightly to the right to center yacht in right portion of screen
+        const buildTarget = new THREE.Vector3(
+          yachtPos.x + 5,
+          yachtPos.y + 2,
+          yachtPos.z
+        )
+        controlsRef.current.target.copy(buildTarget)
+        controlsRef.current.update()
+      }
+    }
+
+    // Build mode: camera targets yacht, user can orbit
+    if (gameMode === 'build') {
+      controlsRef.current.enabled = true
+      // Smoothly follow yacht position (in case it's moving)
+      controlsRef.current.target.lerp(yachtPos, 0.1)
+      return
+    }
 
     if (cameraMode === 'first-person') {
       // First-person: disable controls, position camera at helm

@@ -1,8 +1,11 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { calculateApparentWind, WEATHER_PRESETS } from '../physics/WindSystem'
+import { getSolarMultiplier, getCloudMultiplier, SOLAR_CONSTANT, SOLAR_PANEL_EFFICIENCY } from '../physics/EnergySystem'
 
 export type Weather = 'clear' | 'cloudy' | 'trade-winds' | 'storm' | 'doldrums'
 export type CameraMode = 'third-person' | 'first-person'
+export type GameMode = 'sail' | 'build'
 
 export interface WindState {
   direction: number    // 0-360 degrees (0 = North)
@@ -35,8 +38,9 @@ interface GameState {
   weather: Weather
   wind: WindState
 
-  // Camera
+  // Camera & Mode
   cameraMode: CameraMode
+  gameMode: GameMode
 
   // Energy
   energy: EnergyState
@@ -53,19 +57,14 @@ interface GameState {
   setSteering: (steering: number) => void
   setCameraMode: (mode: CameraMode) => void
   toggleCameraMode: () => void
+  setGameMode: (mode: GameMode) => void
   updatePlayerPosition: (delta: number, maxSpeed: number, turnRate: number) => void
   updateEnergy: (delta: number) => void
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
 }
 
-// Weather presets
-const weatherPresets: Record<Weather, { windSpeed: [number, number], gustFactor: number }> = {
-  'clear': { windSpeed: [2, 6], gustFactor: 0.1 },
-  'cloudy': { windSpeed: [4, 10], gustFactor: 0.2 },
-  'trade-winds': { windSpeed: [8, 15], gustFactor: 0.15 },
-  'storm': { windSpeed: [15, 25], gustFactor: 0.5 },
-  'doldrums': { windSpeed: [0, 2], gustFactor: 0.05 },
-}
+// Use weather presets from WindSystem (re-export for compatibility)
+const weatherPresets = WEATHER_PRESETS
 
 export const useGameStore = create<GameState>()(
   immer((set, get) => ({
@@ -81,7 +80,8 @@ export const useGameStore = create<GameState>()(
     },
 
     cameraMode: 'third-person',
-    
+    gameMode: 'sail',
+
     energy: {
       turbineOutput: 0,
       solarOutput: 0,
@@ -109,8 +109,8 @@ export const useGameStore = create<GameState>()(
     
     setWeather: (weather) => {
       const preset = weatherPresets[weather]
-      const [minSpeed, maxSpeed] = preset.windSpeed
-      
+      const [minSpeed, maxSpeed] = preset.baseSpeed
+
       set((state) => {
         state.weather = weather
         state.wind.speed = minSpeed + Math.random() * (maxSpeed - minSpeed)
@@ -148,6 +148,12 @@ export const useGameStore = create<GameState>()(
       })
     },
 
+    setGameMode: (mode) => {
+      set((state) => {
+        state.gameMode = mode
+      })
+    },
+
     updatePlayerPosition: (delta, maxSpeed, turnRate) => {
       set((state) => {
         const { player } = state
@@ -174,38 +180,71 @@ export const useGameStore = create<GameState>()(
     },
     
     updateEnergy: (delta) => {
-      // This gets called with yacht config from physics system
-      // For now, use simplified calculations
       const state = get()
-      const { wind, timeOfDay, player } = state
-      
-      // Turbine output: P = 0.5 * ρ * A * v³ * η
-      // Simplified: assume 2m² swept area, 25% efficiency
-      const turbineOutput = 0.5 * 1.225 * 2 * Math.pow(wind.speed, 3) * 0.25 / 1000 // kW
-      
-      // Solar output: based on time of day (peak at noon)
-      const sunAngle = Math.sin(timeOfDay * Math.PI) // 0 at midnight, 1 at noon
-      const solarOutput = Math.max(0, sunAngle * 1.5) // Max 1.5 kW
-      
-      // Motor consumption: based on throttle (max 5kW)
-      const motorConsumption = (player.throttle / 100) * 5
-      
+      const { wind, weather, timeOfDay, player } = state
+
+      // Calculate apparent wind for turbine
+      const boatHeading = (player.rotation * 180) / Math.PI
+      const apparent = calculateApparentWind(wind.speed, wind.direction, player.speed, boatHeading)
+
+      // Turbine output using apparent wind
+      // P = 0.5 * ρ * A * v³ * Cp
+      // Swept area: assume 8m height × 2m diameter = 16m²
+      const sweptArea = 16
+      const turbineEfficiency = 0.30 // VAWT efficiency
+      const AIR_DENSITY = 1.225
+
+      // Use apparent wind speed for power (VAWT benefits from apparent wind)
+      const effectiveWindSpeed = Math.max(wind.speed, apparent.speed * 0.7)
+      const turbineOutput = 0.5 * AIR_DENSITY * sweptArea * Math.pow(effectiveWindSpeed, 3) * turbineEfficiency / 1000 // kW
+
+      // Cut-in and cut-out speeds
+      const cutInSpeed = 2.5
+      const cutOutSpeed = 25
+      const safeTurbineOutput = effectiveWindSpeed < cutInSpeed ? 0 :
+        effectiveWindSpeed > cutOutSpeed ? 0 : turbineOutput
+
+      // Solar output using proper calculations
+      const solarMultiplier = getSolarMultiplier(timeOfDay)
+      const cloudMultiplier = getCloudMultiplier(weather)
+      const panelArea = 8 // m² deck coverage
+      const irradiance = SOLAR_CONSTANT * solarMultiplier * cloudMultiplier * 0.7
+
+      const solarOutput = (irradiance * panelArea * SOLAR_PANEL_EFFICIENCY * 0.95) / 1000 // kW with inverter efficiency
+
+      // Motor consumption: based on throttle (max 15kW)
+      const motorEfficiency = 0.92
+      const maxMotorPower = 15
+      const motorConsumption = ((player.throttle / 100) * maxMotorPower) / motorEfficiency
+
+      // Systems consumption
+      const isNight = timeOfDay < 0.25 || timeOfDay > 0.75
+      const systemsConsumption = 0.15 + (isNight ? 0.1 : 0)
+
       // Net power
-      const netPower = turbineOutput + solarOutput - motorConsumption - 0.2 // 0.2 kW systems
-      
+      const netPower = safeTurbineOutput + solarOutput - motorConsumption - systemsConsumption
+
       // Earn energy credits (only for positive generation)
-      const energyGenerated = (turbineOutput + solarOutput) * delta / 3600 // kWh
-      
+      const energyGenerated = (safeTurbineOutput + solarOutput) * delta / 3600 // kWh
+
       set((state) => {
-        state.energy.turbineOutput = turbineOutput
+        state.energy.turbineOutput = safeTurbineOutput
         state.energy.solarOutput = solarOutput
         state.energy.motorConsumption = motorConsumption
+        state.energy.systemsConsumption = systemsConsumption
         state.energy.netPower = netPower
         state.energyCredits += energyGenerated
       })
     },
     
     tick: (delta, maxSpeed = 15, turnRate = 1) => {
+      const { gameMode } = get()
+
+      // Skip simulation updates in build mode
+      if (gameMode === 'build') {
+        return
+      }
+
       // Update player position first
       get().updatePlayerPosition(delta, maxSpeed, turnRate)
 
