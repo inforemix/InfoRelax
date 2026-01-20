@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react'
 import { useYachtStore, HullType } from '@/state/useYachtStore'
 import { KaleidoscopeCanvas } from '@/editor/KaleidoscopeCanvas'
+import { HullGridEditor } from '@/editor/HullGridEditor'
+import { TurbineSectionEditor } from '@/editor/TurbineSectionEditor'
+import { createDefaultHullConfig, createDefaultProceduralTurbineConfig } from '@/editor'
+import type { ProceduralHullConfig } from '@/editor/HullTypes'
+import type { ProceduralTurbineConfig } from '@/editor/TurbineTypes'
 
 // Compact slider
 function Slider({
@@ -101,15 +106,76 @@ function ButtonGroup<T extends string>({
 }
 
 type EditorPanel = 'turbine' | 'hull'
+type EditorMode = 'simple' | 'advanced'
 
 export function BuildMode() {
   const { currentYacht, setHull, setTurbine, setBladeProfile, stats } = useYachtStore()
   const { hull, turbine } = currentYacht
   const [activePanel, setActivePanel] = useState<EditorPanel>('turbine')
+  const [editorMode, setEditorMode] = useState<EditorMode>('simple')
+
+  // Advanced editor configs (extended from basic config)
+  const [advancedHullConfig, setAdvancedHullConfig] = useState<ProceduralHullConfig>(() => {
+    const config = createDefaultHullConfig()
+    return {
+      ...config,
+      length: hull.length,
+      beam: hull.beam,
+      draft: hull.draft,
+      category: hull.type === 'hydrofoil' ? 'monohull' : hull.type,
+      bow: { ...config.bow, type: hull.bowShape },
+    }
+  })
+
+  const [advancedTurbineConfig, setAdvancedTurbineConfig] = useState<ProceduralTurbineConfig>(() => {
+    const config = createDefaultProceduralTurbineConfig()
+    return {
+      ...config,
+      height: turbine.height,
+      diameter: turbine.diameter,
+      bladeCount: turbine.bladeCount,
+      blade: {
+        ...config.blade,
+        style: turbine.style === 'helix' ? 'helix' : turbine.style === 'infinity' ? 'infinity' : 'helix',
+        twist: turbine.twist ?? 45,
+        taper: turbine.taper ?? 0.8,
+      },
+    }
+  })
 
   const handleBladeChange = useCallback((points: typeof turbine.bladeProfile) => {
     setBladeProfile(points)
   }, [setBladeProfile])
+
+  // Sync advanced config changes back to basic store
+  const handleAdvancedHullChange = useCallback((changes: Partial<ProceduralHullConfig>) => {
+    setAdvancedHullConfig(prev => {
+      const updated = { ...prev, ...changes }
+      // Sync key properties back to basic hull config
+      if (changes.length !== undefined) setHull({ length: changes.length })
+      if (changes.beam !== undefined) setHull({ beam: changes.beam })
+      if (changes.draft !== undefined) setHull({ draft: changes.draft })
+      if (changes.bow?.type !== undefined) setHull({ bowShape: changes.bow.type as typeof hull.bowShape })
+      return updated
+    })
+  }, [setHull])
+
+  const handleAdvancedTurbineChange = useCallback((changes: Partial<ProceduralTurbineConfig>) => {
+    setAdvancedTurbineConfig(prev => {
+      const updated = {
+        ...prev,
+        ...changes,
+        blade: changes.blade ? { ...prev.blade, ...changes.blade } : prev.blade,
+      }
+      // Sync key properties back to basic turbine config
+      if (changes.height !== undefined) setTurbine({ height: changes.height })
+      if (changes.diameter !== undefined) setTurbine({ diameter: changes.diameter })
+      if (changes.bladeCount !== undefined) setTurbine({ bladeCount: changes.bladeCount })
+      if (changes.blade?.twist !== undefined) setTurbine({ twist: changes.blade.twist })
+      if (changes.blade?.taper !== undefined) setTurbine({ taper: changes.blade.taper })
+      return updated
+    })
+  }, [setTurbine])
 
   return (
     <div className="absolute inset-0 flex pointer-events-auto">
@@ -130,12 +196,24 @@ export function BuildMode() {
               {panel}
             </button>
           ))}
+          {/* Mode Toggle */}
+          <button
+            onClick={() => setEditorMode(editorMode === 'simple' ? 'advanced' : 'simple')}
+            className={`px-3 py-2 text-[9px] font-medium transition-all ${
+              editorMode === 'advanced'
+                ? 'text-purple-400 bg-purple-500/20'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+            title={editorMode === 'simple' ? 'Switch to Advanced Editor' : 'Switch to Simple Editor'}
+          >
+            {editorMode === 'simple' ? '⚡ Pro' : '✓ Pro'}
+          </button>
         </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-3">
           {/* TURBINE PANEL */}
-          {activePanel === 'turbine' && (
+          {activePanel === 'turbine' && editorMode === 'simple' && (
             <>
               {/* Kaleidoscope Canvas */}
               <div className="flex justify-center mb-3">
@@ -214,8 +292,42 @@ export function BuildMode() {
             </>
           )}
 
-          {/* HULL PANEL */}
-          {activePanel === 'hull' && (
+          {/* ADVANCED TURBINE PANEL */}
+          {activePanel === 'turbine' && editorMode === 'advanced' && (
+            <>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] text-purple-400 font-medium">Pro Turbine Editor</span>
+                <span className="text-[8px] text-slate-500">Section-based blade design</span>
+              </div>
+              <TurbineSectionEditor
+                config={advancedTurbineConfig}
+                onConfigChange={handleAdvancedTurbineChange}
+                size={280}
+              />
+
+              {/* Quick stats */}
+              <div className="mt-3 p-2 bg-slate-800/50 rounded">
+                <div className="text-[9px] text-slate-400 mb-1">Turbine Specs</div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-[10px] font-bold text-cyan-400">{advancedTurbineConfig.height}m</div>
+                    <div className="text-[8px] text-slate-500">Height</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-purple-400">{advancedTurbineConfig.bladeCount}</div>
+                    <div className="text-[8px] text-slate-500">Blades</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-green-400">{advancedTurbineConfig.blade.twist}°</div>
+                    <div className="text-[8px] text-slate-500">Twist</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* HULL PANEL - SIMPLE MODE */}
+          {activePanel === 'hull' && editorMode === 'simple' && (
             <>
               <Section title="Hull Type">
                 <div className="grid grid-cols-2 gap-1.5 mb-2">
@@ -324,6 +436,146 @@ export function BuildMode() {
                   </div>
                 </div>
               </Section>
+            </>
+          )}
+
+          {/* HULL PANEL - ADVANCED MODE */}
+          {activePanel === 'hull' && editorMode === 'advanced' && (
+            <>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] text-purple-400 font-medium">Pro Hull Editor</span>
+                <span className="text-[8px] text-slate-500">Draw cross-sections & profiles</span>
+              </div>
+              <HullGridEditor
+                config={advancedHullConfig}
+                onConfigChange={handleAdvancedHullChange}
+                size={280}
+              />
+
+              {/* Advanced hull controls */}
+              <div className="mt-3 space-y-2">
+                <Section title="Bow Configuration" defaultOpen={false}>
+                  <div className="grid grid-cols-4 gap-1 mb-2">
+                    {(['piercing', 'flared', 'bulbous', 'clipper'] as const).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => handleAdvancedHullChange({
+                          bow: { ...advancedHullConfig.bow, type }
+                        })}
+                        className={`py-1 rounded text-[8px] capitalize ${
+                          advancedHullConfig.bow.type === type
+                            ? 'bg-cyan-500 text-white'
+                            : 'bg-slate-700 text-slate-400'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                  <Slider
+                    label="Entry Angle"
+                    value={advancedHullConfig.bow.angle}
+                    min={10}
+                    max={60}
+                    step={5}
+                    unit="°"
+                    onChange={(v) => handleAdvancedHullChange({
+                      bow: { ...advancedHullConfig.bow, angle: v }
+                    })}
+                  />
+                  <Slider
+                    label="Flare"
+                    value={advancedHullConfig.bow.flare}
+                    min={0}
+                    max={30}
+                    step={5}
+                    unit="°"
+                    onChange={(v) => handleAdvancedHullChange({
+                      bow: { ...advancedHullConfig.bow, flare: v }
+                    })}
+                  />
+                </Section>
+
+                <Section title="Stern Configuration" defaultOpen={false}>
+                  <div className="grid grid-cols-3 gap-1 mb-2">
+                    {(['transom', 'cruiser', 'canoe'] as const).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => handleAdvancedHullChange({
+                          stern: { ...advancedHullConfig.stern, type }
+                        })}
+                        className={`py-1 rounded text-[8px] capitalize ${
+                          advancedHullConfig.stern.type === type
+                            ? 'bg-cyan-500 text-white'
+                            : 'bg-slate-700 text-slate-400'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                  <Slider
+                    label="Width"
+                    value={advancedHullConfig.stern.width}
+                    min={0.3}
+                    max={1.0}
+                    step={0.05}
+                    onChange={(v) => handleAdvancedHullChange({
+                      stern: { ...advancedHullConfig.stern, width: v }
+                    })}
+                  />
+                </Section>
+
+                <Section title="Keel Type" defaultOpen={false}>
+                  <div className="grid grid-cols-3 gap-1 mb-2">
+                    {(['flat', 'v-hull', 'deep-v'] as const).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => handleAdvancedHullChange({
+                          keel: { ...advancedHullConfig.keel, type }
+                        })}
+                        className={`py-1 rounded text-[8px] capitalize ${
+                          advancedHullConfig.keel.type === type
+                            ? 'bg-cyan-500 text-white'
+                            : 'bg-slate-700 text-slate-400'
+                        }`}
+                      >
+                        {type.replace('-', ' ')}
+                      </button>
+                    ))}
+                  </div>
+                  <Slider
+                    label="Depth"
+                    value={advancedHullConfig.keel.depth}
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    unit="m"
+                    onChange={(v) => handleAdvancedHullChange({
+                      keel: { ...advancedHullConfig.keel, depth: v }
+                    })}
+                  />
+                </Section>
+              </div>
+
+              {/* Quick stats */}
+              <div className="mt-3 p-2 bg-slate-800/50 rounded">
+                <div className="text-[9px] text-slate-400 mb-1">Hull Specs</div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-[10px] font-bold text-cyan-400">{advancedHullConfig.length}m</div>
+                    <div className="text-[8px] text-slate-500">Length</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-purple-400">{advancedHullConfig.beam}m</div>
+                    <div className="text-[8px] text-slate-500">Beam</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-green-400">{advancedHullConfig.draft}m</div>
+                    <div className="text-[8px] text-slate-500">Draft</div>
+                  </div>
+                </div>
+              </div>
             </>
           )}
         </div>
