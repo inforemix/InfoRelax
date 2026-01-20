@@ -85,15 +85,16 @@ function generateIslands(seed: number, bounds: WorldData['bounds']): Island[] {
 
     const radius = 300 + perlin.noise(seed + i * 2, 2) * 200;
     const height = 100 + perlin.noise(seed + i * 3, 3) * 150;
-    const typeIndex = Math.floor(perlin.noise(seed + i * 4, 4) * 3);
     const types: Array<Island['type']> = ['volcanic', 'coral', 'sandy'];
+    // Clamp Perlin noise output to valid array index
+    const islandTypeIndex = Math.floor(Math.abs(perlin.noise(seed + i * 4, 4)) * types.length) % types.length;
 
     islands.push({
       id: `island-${i}`,
       position: [clampedX, clampedZ],
       radius,
       height,
-      type: types[typeIndex],
+      type: types[islandTypeIndex],
       elevation: createElevationFunction(clampedX, clampedZ, radius, height, seed + i),
     });
   }
@@ -185,7 +186,10 @@ function generatePOIs(
     const x = Math.cos(angle) * distance;
     const z = Math.sin(angle) * distance;
 
-    const type = types[Math.floor(perlin.noise(seed + i * 11, 11) * types.length)];
+    // Clamp Perlin noise output to valid array index (0 to types.length-1)
+    const noiseValue = perlin.noise(seed + i * 11, 11);
+    const typeIndex = Math.floor(Math.abs(noiseValue) * types.length) % types.length;
+    const type = types[typeIndex];
 
     pois.push({
       id: `poi-${i}`,
