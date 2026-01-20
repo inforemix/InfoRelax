@@ -7,6 +7,7 @@ interface KeyState {
   right: boolean    // D
   boost: boolean    // Shift
   toggleCamera: boolean // V (press event only)
+  resetCamera: boolean  // N (press event only)
 }
 
 export function useKeyboard(): KeyState {
@@ -17,6 +18,7 @@ export function useKeyboard(): KeyState {
     right: false,
     boost: false,
     toggleCamera: false,
+    resetCamera: false,
   })
 
   useEffect(() => {
@@ -50,8 +52,12 @@ export function useKeyboard(): KeyState {
         case 'KeyV':
           // Toggle camera mode (one-shot, reset immediately)
           setKeys((k) => ({ ...k, toggleCamera: true }))
-          // Reset after a short delay to allow detection
           setTimeout(() => setKeys((k) => ({ ...k, toggleCamera: false })), 100)
+          break
+        case 'KeyN':
+          // Reset camera to default back view (one-shot)
+          setKeys((k) => ({ ...k, resetCamera: true }))
+          setTimeout(() => setKeys((k) => ({ ...k, resetCamera: false })), 100)
           break
       }
     }

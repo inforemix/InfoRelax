@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Sky, Stars } from '@react-three/drei'
+import { Sky, Stars } from '@react-three/drei'
 import { Suspense, useState } from 'react'
 import { Leva } from 'leva'
 
@@ -7,6 +7,7 @@ import { Leva } from 'leva'
 import { Ocean } from './components/three/Ocean'
 import { Yacht } from './components/three/Yacht'
 import { WindIndicator } from './components/three/WindIndicator'
+import { CameraController } from './components/three/CameraController'
 import { HUD } from './components/ui/HUD'
 import { BuilderPanel } from './components/ui/BuilderPanel'
 import { LoadingScreen } from './components/ui/LoadingScreen'
@@ -60,13 +61,8 @@ export default function App() {
           {/* Wind Indicator */}
           <WindIndicator />
 
-          {/* Camera Controls */}
-          <OrbitControls
-            enablePan={false}
-            minDistance={10}
-            maxDistance={100}
-            maxPolarAngle={Math.PI / 2.1}
-          />
+          {/* Camera Controller */}
+          <CameraController />
         </Suspense>
       </Canvas>
 

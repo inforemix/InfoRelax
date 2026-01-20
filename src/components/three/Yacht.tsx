@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
 import * as THREE from 'three'
 
@@ -103,13 +103,10 @@ export function Yacht() {
   const { hull, turbine } = currentYacht
 
   // Get game state
-  const { wind, player, cameraMode, tick, setThrottle, setSteering, toggleCameraMode } = useGameStore()
+  const { wind, player, tick, setThrottle, setSteering } = useGameStore()
 
   // Keyboard input
   const keys = useKeyboard()
-
-  // Get camera for follow
-  const { camera } = useThree()
 
   // Debug controls
   const { bobAmount, bobSpeed } = useControls('Yacht', {
@@ -138,13 +135,6 @@ export function Yacht() {
     setSteering(steering)
   }, [keys.forward, keys.backward, keys.left, keys.right, player.throttle, setThrottle, setSteering])
 
-  // Handle camera toggle (V key)
-  useEffect(() => {
-    if (keys.toggleCamera) {
-      toggleCameraMode()
-    }
-  }, [keys.toggleCamera, toggleCameraMode])
-
   // Animate the yacht and run game tick
   useFrame((state, delta) => {
     if (!groupRef.current) return
@@ -160,7 +150,8 @@ export function Yacht() {
     groupRef.current.position.z = player.position[2]
 
     // Update yacht rotation from player state
-    groupRef.current.rotation.y = player.rotation
+    // Offset by -90° to align model bow (facing +X) with movement direction (+Z when rotation=0)
+    groupRef.current.rotation.y = player.rotation - Math.PI / 2
 
     // Bob up and down with waves
     groupRef.current.position.y = Math.sin(time * bobSpeed) * bobAmount
@@ -178,46 +169,6 @@ export function Yacht() {
 
     // Rotate turbine based on wind speed
     turbineRotation.current += wind.speed * 0.02
-
-    // Camera follow based on camera mode
-    const yachtPos = groupRef.current.position
-    const yachtRot = player.rotation
-
-    if (cameraMode === 'first-person') {
-      // First-person: camera at helm position, looking forward
-      const fpHeight = 3.5
-      const fpForwardOffset = 2
-      const targetCameraPos = new THREE.Vector3(
-        yachtPos.x + Math.sin(yachtRot) * fpForwardOffset,
-        yachtPos.y + fpHeight,
-        yachtPos.z + Math.cos(yachtRot) * fpForwardOffset
-      )
-
-      camera.position.lerp(targetCameraPos, 0.1)
-
-      // Look forward in direction of travel
-      const lookDistance = 50
-      const lookTarget = new THREE.Vector3(
-        yachtPos.x + Math.sin(yachtRot) * lookDistance,
-        yachtPos.y + 2,
-        yachtPos.z + Math.cos(yachtRot) * lookDistance
-      )
-      camera.lookAt(lookTarget)
-    } else {
-      // Third-person: camera behind and above the yacht
-      const cameraDistance = 25
-      const cameraHeight = 12
-      const targetCameraPos = new THREE.Vector3(
-        yachtPos.x - Math.sin(yachtRot) * cameraDistance,
-        yachtPos.y + cameraHeight,
-        yachtPos.z - Math.cos(yachtRot) * cameraDistance
-      )
-
-      camera.position.lerp(targetCameraPos, 0.05)
-
-      const lookTarget = new THREE.Vector3(yachtPos.x, yachtPos.y + 2, yachtPos.z)
-      camera.lookAt(lookTarget)
-    }
   })
 
   return (
