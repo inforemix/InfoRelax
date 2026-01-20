@@ -5,6 +5,7 @@ import * as THREE from 'three'
 
 import { useYachtStore } from '@/state/useYachtStore'
 import { useGameStore } from '@/state/useGameStore'
+import { useRaceStore } from '@/state/useRaceStore'
 import { useKeyboard } from '@/utils/useKeyboard'
 import { ParametricHull } from './hulls/HullGenerator'
 import { CustomTurbine } from './CustomTurbine'
@@ -17,10 +18,16 @@ export function Yacht() {
   const { hull, turbine } = currentYacht
 
   // Get game state
-  const { wind, player, tick, setThrottle, setSteering } = useGameStore()
+  const { wind, player, tick, setThrottle, setSteering, updateCheckpointDetection } = useGameStore()
+
+  // Get race state
+  const { isRacing, currentRace, passCheckpoint, currentCheckpoint } = useRaceStore()
 
   // Keyboard input
   const keys = useKeyboard()
+
+  // Track last checkpoint to detect when we pass through
+  const lastCheckpointRef = useRef<string | null>(null)
 
   // Debug controls
   const { bobAmount, bobSpeed } = useControls('Yacht', {
@@ -80,6 +87,33 @@ export function Yacht() {
 
     // Gentle pitch
     groupRef.current.rotation.x = Math.sin(time * bobSpeed * 0.5) * 0.02
+
+    // Checkpoint detection for racing
+    if (isRacing && currentRace) {
+      updateCheckpointDetection(currentRace.checkpoints)
+
+      // Check if we've passed the current checkpoint
+      const currentCheckpointObj = currentRace.checkpoints[currentCheckpoint]
+      if (currentCheckpointObj) {
+        const dx = player.position[0] - currentCheckpointObj.position[0]
+        const dz = player.position[2] - currentCheckpointObj.position[1]
+        const distance = Math.sqrt(dx * dx + dz * dz)
+
+        // Passed through checkpoint
+        if (
+          distance <= currentCheckpointObj.radius &&
+          lastCheckpointRef.current !== currentCheckpointObj.id
+        ) {
+          lastCheckpointRef.current = currentCheckpointObj.id
+          passCheckpoint(currentCheckpointObj.id)
+
+          // Check if we've completed the lap
+          if (currentCheckpoint + 1 >= currentRace.checkpoints.length) {
+            useRaceStore.getState().completeLap()
+          }
+        }
+      }
+    }
   })
 
   // Calculate deck height for turbine placement

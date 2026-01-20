@@ -48,7 +48,13 @@ interface GameState {
 
   // Player
   player: PlayerState
-  
+
+  // World state
+  currentWindZone: string | null  // Wind zone ID if in one
+  nearbyCheckpoints: string[]     // Checkpoint IDs in range
+  distanceToCheckpoint: Record<string, number> // Checkpoint distances
+  lastPassedCheckpoint: string | null // For race checkpoint tracking
+
   // Actions
   setTimeOfDay: (time: number) => void
   setWeather: (weather: Weather) => void
@@ -60,6 +66,7 @@ interface GameState {
   setGameMode: (mode: GameMode) => void
   updatePlayerPosition: (delta: number, maxSpeed: number, turnRate: number) => void
   updateEnergy: (delta: number) => void
+  updateCheckpointDetection: (checkpoints: any[]) => void
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
 }
 
@@ -71,7 +78,7 @@ export const useGameStore = create<GameState>()(
     // Initial state
     timeOfDay: 0.6, // Late afternoon
     gameTime: 0,
-    
+
     weather: 'trade-winds',
     wind: {
       direction: 45,  // NE wind
@@ -89,9 +96,9 @@ export const useGameStore = create<GameState>()(
       systemsConsumption: 0.2,
       netPower: 0,
     },
-    
+
     energyCredits: 0,
-    
+
     player: {
       position: [0, 0, 0],
       rotation: 0,
@@ -99,6 +106,11 @@ export const useGameStore = create<GameState>()(
       throttle: 0,
       steering: 0,
     },
+
+    currentWindZone: null,
+    nearbyCheckpoints: [],
+    distanceToCheckpoint: {},
+    lastPassedCheckpoint: null,
     
     // Actions
     setTimeOfDay: (time) => {
@@ -151,6 +163,30 @@ export const useGameStore = create<GameState>()(
     setGameMode: (mode) => {
       set((state) => {
         state.gameMode = mode
+      })
+    },
+
+    updateCheckpointDetection: (checkpoints) => {
+      const { player } = get()
+      const distances: Record<string, number> = {}
+      const nearby: string[] = []
+
+      for (const checkpoint of checkpoints) {
+        const dx = checkpoint.position[0] - player.position[0]
+        const dz = checkpoint.position[1] - player.position[2]
+        const distance = Math.sqrt(dx * dx + dz * dz)
+
+        distances[checkpoint.id] = distance
+
+        // Checkpoints within 1.5x their radius are considered "nearby"
+        if (distance <= checkpoint.radius * 1.5) {
+          nearby.push(checkpoint.id)
+        }
+      }
+
+      set((state) => {
+        state.distanceToCheckpoint = distances
+        state.nearbyCheckpoints = nearby
       })
     },
 
