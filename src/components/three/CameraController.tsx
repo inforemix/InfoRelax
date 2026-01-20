@@ -1,0 +1,116 @@
+import { useRef, useEffect } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
+import { OrbitControls } from '@react-three/drei'
+import * as THREE from 'three'
+
+import { useGameStore } from '@/state/useGameStore'
+import { useKeyboard } from '@/utils/useKeyboard'
+
+export function CameraController() {
+  const controlsRef = useRef<OrbitControlsImpl>(null)
+  const { camera } = useThree()
+
+  const { player, cameraMode, toggleCameraMode } = useGameStore()
+  const keys = useKeyboard()
+
+  // Track if we need to reset camera
+  const shouldReset = useRef(false)
+
+  // Handle V key for camera mode toggle
+  useEffect(() => {
+    if (keys.toggleCamera) {
+      toggleCameraMode()
+    }
+  }, [keys.toggleCamera, toggleCameraMode])
+
+  // Handle N key for camera reset
+  useEffect(() => {
+    if (keys.resetCamera) {
+      shouldReset.current = true
+    }
+  }, [keys.resetCamera])
+
+  useFrame(() => {
+    if (!controlsRef.current) return
+
+    const yachtPos = new THREE.Vector3(
+      player.position[0],
+      player.position[1],
+      player.position[2]
+    )
+
+    if (cameraMode === 'first-person') {
+      // First-person: disable controls, position camera at helm
+      controlsRef.current.enabled = false
+
+      const fpHeight = 3.5
+      const fpForwardOffset = 2
+      const targetCameraPos = new THREE.Vector3(
+        yachtPos.x + Math.sin(player.rotation) * fpForwardOffset,
+        yachtPos.y + fpHeight,
+        yachtPos.z + Math.cos(player.rotation) * fpForwardOffset
+      )
+
+      camera.position.lerp(targetCameraPos, 0.1)
+
+      // Look forward
+      const lookDistance = 50
+      const lookTarget = new THREE.Vector3(
+        yachtPos.x + Math.sin(player.rotation) * lookDistance,
+        yachtPos.y + 2,
+        yachtPos.z + Math.cos(player.rotation) * lookDistance
+      )
+      camera.lookAt(lookTarget)
+    } else {
+      // Third-person: enable orbit controls, target follows yacht
+      controlsRef.current.enabled = true
+
+      // Update orbit target to follow yacht
+      controlsRef.current.target.lerp(yachtPos, 0.1)
+
+      // Reset camera to default back view position (N key)
+      if (shouldReset.current) {
+        shouldReset.current = false
+
+        // Default position: behind and above the yacht
+        const cameraDistance = 25
+        const cameraHeight = 12
+        const defaultPos = new THREE.Vector3(
+          yachtPos.x - Math.sin(player.rotation) * cameraDistance,
+          yachtPos.y + cameraHeight,
+          yachtPos.z - Math.cos(player.rotation) * cameraDistance
+        )
+
+        camera.position.copy(defaultPos)
+        controlsRef.current.target.copy(yachtPos)
+        controlsRef.current.update()
+      }
+    }
+  })
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      enablePan={true}
+      enableZoom={true}
+      enableRotate={true}
+      minDistance={10}
+      maxDistance={100}
+      maxPolarAngle={Math.PI / 2.1}
+      minPolarAngle={0.1}
+      // Enable damping for smoother controls
+      enableDamping={true}
+      dampingFactor={0.05}
+      // Allow 360 rotation
+      minAzimuthAngle={-Infinity}
+      maxAzimuthAngle={Infinity}
+      // Mouse buttons: left = rotate, right = pan
+      mouseButtons={{
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.PAN,
+      }}
+    />
+  )
+}

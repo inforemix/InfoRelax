@@ -1,6 +1,7 @@
-import { useRef, useMemo } from 'react'
+import { useRef } from 'react'
 import { useFrame, extend } from '@react-three/fiber'
 import { shaderMaterial } from '@react-three/drei'
+import { useControls } from 'leva'
 import * as THREE from 'three'
 
 // Custom water shader material
@@ -83,14 +84,23 @@ interface OceanProps {
 
 export function Ocean({ size = 500, segments = 256 }: OceanProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null)
-  
+
+  // Leva controls for wave tuning
+  const { waveHeight, waveFrequency, waveSpeed } = useControls('Ocean', {
+    waveHeight: { value: 0.3, min: 0, max: 2, step: 0.1 },
+    waveFrequency: { value: 0.5, min: 0.1, max: 2, step: 0.1 },
+    waveSpeed: { value: 0.5, min: 0.1, max: 2, step: 0.1 },
+  })
+
   // Animate the water
   useFrame((state) => {
     if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime * 0.5
+      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime * waveSpeed
+      materialRef.current.uniforms.uWaveHeight.value = waveHeight
+      materialRef.current.uniforms.uWaveFrequency.value = waveFrequency
     }
   })
-  
+
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
       <planeGeometry args={[size, size, segments, segments]} />

@@ -3,34 +3,34 @@
 ## Sprint 1-2: Foundation (Weeks 1-2)
 
 ### Setup
-- [ ] Run `npm install`
-- [ ] Verify `npm run dev` starts correctly
-- [ ] Test Three.js canvas renders
-- [ ] Confirm Tailwind styles working
+- [x] Run `npm install`
+- [x] Verify `npm run dev` starts correctly
+- [x] Test Three.js canvas renders
+- [x] Confirm Tailwind styles working
 
 ### Water System
-- [ ] Implement wave vertex shader
-- [ ] Add foam on wave peaks
-- [ ] Tune wave height and frequency
-- [ ] Add underwater fog
+- [x] Implement wave vertex shader
+- [x] Add foam on wave peaks
+- [x] Tune wave height and frequency (Leva controls)
+- [x] Add underwater fog
 
 ### Yacht Placeholder
-- [ ] Create catamaran hull geometry
-- [ ] Add outrigger/hydrofoil shape
-- [ ] Implement bobbing animation
-- [ ] Add roll/pitch with waves
+- [x] Create catamaran hull geometry
+- [x] Add outrigger/hydrofoil shape
+- [x] Implement bobbing animation
+- [x] Add roll/pitch with waves
 
 ### Camera
-- [ ] Orbit controls with limits
-- [ ] Follow player yacht
-- [ ] Zoom constraints
-- [ ] Optional first-person view
+- [x] Orbit controls with limits
+- [x] Follow player yacht
+- [x] Zoom constraints
+- [x] Optional first-person view (V key toggle)
 
 ### Basic Movement
-- [ ] WASD keyboard input
-- [ ] Throttle control
-- [ ] Steering with A/D
-- [ ] Speed based on throttle
+- [x] WASD keyboard input
+- [x] Throttle control
+- [x] Steering with A/D
+- [x] Speed based on throttle
 
 ---
 
