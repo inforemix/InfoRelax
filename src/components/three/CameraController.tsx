@@ -45,15 +45,22 @@ export function CameraController() {
     if (gameMode !== lastGameMode.current) {
       lastGameMode.current = gameMode
       if (gameMode === 'build') {
-        // Position camera for build mode preview (50/50 split - yacht in right half)
-        // Camera positioned to view yacht from front-left angle
+        // Position camera for build mode preview (1/3 editor, 2/3 preview)
+        // Camera positioned to place yacht on the right side of the preview area
+        // Offset camera to the left so yacht appears on the right
         const buildCameraPos = new THREE.Vector3(
-          yachtPos.x + 18,
-          yachtPos.y + 10,
-          yachtPos.z + 8
+          yachtPos.x - 12,  // Offset left to push yacht right in view
+          yachtPos.y + 12,
+          yachtPos.z + 20
         )
         camera.position.copy(buildCameraPos)
-        controlsRef.current.target.copy(yachtPos)
+        // Target slightly to the right to center yacht in right portion of screen
+        const buildTarget = new THREE.Vector3(
+          yachtPos.x + 5,
+          yachtPos.y + 2,
+          yachtPos.z
+        )
+        controlsRef.current.target.copy(buildTarget)
         controlsRef.current.update()
       }
     }

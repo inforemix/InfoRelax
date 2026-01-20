@@ -70,8 +70,8 @@ export default function App() {
           <HUD />
         </div>
 
-        {/* Mode Toggle - Top left */}
-        <div className="absolute top-4 left-4 flex gap-2 z-50">
+        {/* Mode Toggle - Center top */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
           <button
             onClick={() => setGameMode('sail')}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${

@@ -18,8 +18,8 @@ export function HUD() {
   
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {/* Top Right: Time & Weather */}
-      <div className="absolute top-4 right-4 glass rounded-xl p-4 text-right">
+      {/* Top Left: Time & Weather */}
+      <div className="absolute top-4 left-4 glass rounded-xl p-4">
         <div className="text-2xl font-mono text-white">{timeString}</div>
         <div className="text-sm text-cyan-400">Trade Winds</div>
       </div>
