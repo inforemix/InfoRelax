@@ -6,6 +6,7 @@ interface KeyState {
   left: boolean     // A
   right: boolean    // D
   boost: boolean    // Shift
+  toggleCamera: boolean // V (press event only)
 }
 
 export function useKeyboard(): KeyState {
@@ -15,6 +16,7 @@ export function useKeyboard(): KeyState {
     left: false,
     right: false,
     boost: false,
+    toggleCamera: false,
   })
 
   useEffect(() => {
@@ -44,6 +46,12 @@ export function useKeyboard(): KeyState {
         case 'ShiftLeft':
         case 'ShiftRight':
           setKeys((k) => ({ ...k, boost: true }))
+          break
+        case 'KeyV':
+          // Toggle camera mode (one-shot, reset immediately)
+          setKeys((k) => ({ ...k, toggleCamera: true }))
+          // Reset after a short delay to allow detection
+          setTimeout(() => setKeys((k) => ({ ...k, toggleCamera: false })), 100)
           break
       }
     }

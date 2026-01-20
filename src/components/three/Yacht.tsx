@@ -103,7 +103,7 @@ export function Yacht() {
   const { hull, turbine } = currentYacht
 
   // Get game state
-  const { wind, player, tick, setThrottle, setSteering } = useGameStore()
+  const { wind, player, cameraMode, tick, setThrottle, setSteering, toggleCameraMode } = useGameStore()
 
   // Keyboard input
   const keys = useKeyboard()
@@ -136,7 +136,14 @@ export function Yacht() {
 
     setThrottle(throttle)
     setSteering(steering)
-  }, [keys, player.throttle, setThrottle, setSteering])
+  }, [keys.forward, keys.backward, keys.left, keys.right, player.throttle, setThrottle, setSteering])
+
+  // Handle camera toggle (V key)
+  useEffect(() => {
+    if (keys.toggleCamera) {
+      toggleCameraMode()
+    }
+  }, [keys.toggleCamera, toggleCameraMode])
 
   // Animate the yacht and run game tick
   useFrame((state, delta) => {
@@ -172,25 +179,45 @@ export function Yacht() {
     // Rotate turbine based on wind speed
     turbineRotation.current += wind.speed * 0.02
 
-    // Camera follow (smooth)
+    // Camera follow based on camera mode
     const yachtPos = groupRef.current.position
     const yachtRot = player.rotation
 
-    // Calculate camera position behind the yacht
-    const cameraDistance = 25
-    const cameraHeight = 12
-    const targetCameraPos = new THREE.Vector3(
-      yachtPos.x - Math.sin(yachtRot) * cameraDistance,
-      yachtPos.y + cameraHeight,
-      yachtPos.z - Math.cos(yachtRot) * cameraDistance
-    )
+    if (cameraMode === 'first-person') {
+      // First-person: camera at helm position, looking forward
+      const fpHeight = 3.5
+      const fpForwardOffset = 2
+      const targetCameraPos = new THREE.Vector3(
+        yachtPos.x + Math.sin(yachtRot) * fpForwardOffset,
+        yachtPos.y + fpHeight,
+        yachtPos.z + Math.cos(yachtRot) * fpForwardOffset
+      )
 
-    // Smoothly move camera
-    camera.position.lerp(targetCameraPos, 0.05)
+      camera.position.lerp(targetCameraPos, 0.1)
 
-    // Camera looks at yacht
-    const lookTarget = new THREE.Vector3(yachtPos.x, yachtPos.y + 2, yachtPos.z)
-    camera.lookAt(lookTarget)
+      // Look forward in direction of travel
+      const lookDistance = 50
+      const lookTarget = new THREE.Vector3(
+        yachtPos.x + Math.sin(yachtRot) * lookDistance,
+        yachtPos.y + 2,
+        yachtPos.z + Math.cos(yachtRot) * lookDistance
+      )
+      camera.lookAt(lookTarget)
+    } else {
+      // Third-person: camera behind and above the yacht
+      const cameraDistance = 25
+      const cameraHeight = 12
+      const targetCameraPos = new THREE.Vector3(
+        yachtPos.x - Math.sin(yachtRot) * cameraDistance,
+        yachtPos.y + cameraHeight,
+        yachtPos.z - Math.cos(yachtRot) * cameraDistance
+      )
+
+      camera.position.lerp(targetCameraPos, 0.05)
+
+      const lookTarget = new THREE.Vector3(yachtPos.x, yachtPos.y + 2, yachtPos.z)
+      camera.lookAt(lookTarget)
+    }
   })
 
   return (

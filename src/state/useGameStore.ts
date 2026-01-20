@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 export type Weather = 'clear' | 'cloudy' | 'trade-winds' | 'storm' | 'doldrums'
+export type CameraMode = 'third-person' | 'first-person'
 
 export interface WindState {
   direction: number    // 0-360 degrees (0 = North)
@@ -29,15 +30,18 @@ interface GameState {
   // Time
   timeOfDay: number        // 0-1 (0 = midnight, 0.5 = noon)
   gameTime: number         // Seconds since start
-  
+
   // Weather & Wind
   weather: Weather
   wind: WindState
-  
+
+  // Camera
+  cameraMode: CameraMode
+
   // Energy
   energy: EnergyState
   energyCredits: number    // Total EC earned
-  
+
   // Player
   player: PlayerState
   
@@ -47,6 +51,8 @@ interface GameState {
   setWind: (wind: Partial<WindState>) => void
   setThrottle: (throttle: number) => void
   setSteering: (steering: number) => void
+  setCameraMode: (mode: CameraMode) => void
+  toggleCameraMode: () => void
   updatePlayerPosition: (delta: number, maxSpeed: number, turnRate: number) => void
   updateEnergy: (delta: number) => void
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
@@ -73,6 +79,8 @@ export const useGameStore = create<GameState>()(
       speed: 10,
       gustFactor: 0.15,
     },
+
+    cameraMode: 'third-person',
     
     energy: {
       turbineOutput: 0,
@@ -125,6 +133,18 @@ export const useGameStore = create<GameState>()(
     setSteering: (steering) => {
       set((state) => {
         state.player.steering = Math.max(-1, Math.min(1, steering))
+      })
+    },
+
+    setCameraMode: (mode) => {
+      set((state) => {
+        state.cameraMode = mode
+      })
+    },
+
+    toggleCameraMode: () => {
+      set((state) => {
+        state.cameraMode = state.cameraMode === 'third-person' ? 'first-person' : 'third-person'
       })
     },
 
