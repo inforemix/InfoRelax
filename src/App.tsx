@@ -1,5 +1,4 @@
 import { Canvas } from '@react-three/fiber'
-import { Sky, Stars } from '@react-three/drei'
 import { Suspense, useEffect } from 'react'
 import { Leva } from 'leva'
 
@@ -16,6 +15,7 @@ import { RaceCheckpoints } from './components/three/RaceCheckpoints'
 import { WeatherEffects } from './components/three/WeatherEffects'
 import { DynamicLighting } from './components/three/DynamicLighting'
 import { ProceduralClouds } from './components/three/ProceduralClouds'
+import { EnhancedSky } from './components/three/EnhancedSky'
 import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
@@ -33,7 +33,7 @@ import { useLandingStore } from './state/useLandingStore'
 import { useWorldIntegration } from './hooks/useWorldIntegration'
 
 export default function App() {
-  const { timeOfDay, gameMode, setGameMode } = useGameStore()
+  const { gameMode, setGameMode } = useGameStore()
   const currentRace = useRaceStore((state) => state.currentRace)
   const gameStarted = useLandingStore((state) => state.gameStarted)
 
@@ -73,14 +73,8 @@ export default function App() {
           {/* Procedural Clouds */}
           <ProceduralClouds />
 
-          {/* Environment */}
-          <Sky
-            distance={450000}
-            sunPosition={[100, timeOfDay > 0.5 ? 20 : -20, 100]}
-            inclination={0.5}
-            azimuth={0.25}
-          />
-          <Stars radius={100} depth={50} count={5000} factor={4} fade />
+          {/* Environment - Enhanced Sky with dynamic sunsets */}
+          <EnhancedSky />
           <fogExp2 attach="fog" args={['#b0c4de', 0.0008]} />
 
           {/* Ocean */}

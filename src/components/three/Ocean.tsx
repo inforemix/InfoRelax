@@ -77,10 +77,18 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     })
 
     waterObj.rotation.x = -Math.PI / 2
-    waterObj.position.y = 0
+    waterObj.position.y = -0.5 // Slightly below sea level to prevent z-fighting
+
+    // Fix rendering order and depth to prevent black clipping
+    if (waterObj.material) {
+      const mat = waterObj.material as THREE.ShaderMaterial
+      mat.depthWrite = true
+      mat.depthTest = true
+      mat.side = THREE.FrontSide
+    }
 
     return waterObj
-  }, [waterGeometry, waterNormals, scene.fog])
+  }, [waterGeometry, waterNormals, scene.fog, sunColor, waterColor, distortionScale])
 
   // Update water parameters when controls change
   useEffect(() => {
