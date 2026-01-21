@@ -2,24 +2,71 @@ import { useGameStore } from '@/state/useGameStore'
 
 export function HUD() {
   const { wind, energy, energyCredits, player, timeOfDay, battery, boatDamage } = useGameStore()
-  
+
   // Format energy credits
   const formatEC = (ec: number) => {
     if (ec >= 1000) return `${(ec / 1000).toFixed(1)}k`
     return ec.toFixed(1)
   }
-  
+
   // Get time of day as hours
   const hours = Math.floor(timeOfDay * 24)
   const minutes = Math.floor((timeOfDay * 24 - hours) * 60)
   const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-  
+
+  // Calculate compass heading (0-360)
+  // player.rotation: 0 = facing +Z (South), PI/2 = +X (East), PI = -Z (North), 3PI/2 = -X (West)
+  // Compass: 0 = North, 90 = East, 180 = South, 270 = West
+  const heading = (((-player.rotation * 180 / Math.PI) + 180) % 360 + 360) % 360
+  const getCardinalDirection = (deg: number) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+    const index = Math.round(deg / 45) % 8
+    return directions[index]
+  }
+
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {/* Top Left: Time & Weather */}
+      {/* Top Left: Time, Compass & Weather */}
       <div className="absolute top-4 left-4 glass rounded-xl p-4">
-        <div className="text-2xl font-mono text-white">{timeString}</div>
-        <div className="text-sm text-cyan-400">Trade Winds</div>
+        <div className="flex items-start gap-4">
+          {/* Time */}
+          <div>
+            <div className="text-2xl font-mono text-white">{timeString}</div>
+            <div className="text-sm text-cyan-400">Trade Winds</div>
+          </div>
+
+          {/* Compass */}
+          <div className="flex flex-col items-center">
+            <div className="relative w-14 h-14">
+              {/* Compass ring */}
+              <div className="absolute inset-0 border-2 border-slate-500 rounded-full" />
+
+              {/* Cardinal marks */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 text-[8px] font-bold text-red-400">N</div>
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-0.5 text-[8px] font-bold text-slate-400">S</div>
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0.5 text-[8px] font-bold text-slate-400">W</div>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0.5 text-[8px] font-bold text-slate-400">E</div>
+
+              {/* Rotating needle */}
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ transform: `rotate(${heading}deg)` }}
+              >
+                {/* North pointer (red) */}
+                <div className="absolute w-1.5 h-5 bg-gradient-to-t from-transparent to-red-500 top-1.5"
+                     style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+                {/* South pointer (white) */}
+                <div className="absolute w-1.5 h-5 bg-gradient-to-b from-transparent to-slate-300 bottom-1.5"
+                     style={{ clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)' }} />
+                {/* Center dot */}
+                <div className="absolute w-2 h-2 bg-slate-400 rounded-full" />
+              </div>
+            </div>
+            <div className="text-xs text-cyan-400 font-mono mt-1">
+              {heading.toFixed(0)}° {getCardinalDirection(heading)}
+            </div>
+          </div>
+        </div>
 
         {/* Hull Integrity */}
         <div className="mt-3 pt-3 border-t border-slate-600">

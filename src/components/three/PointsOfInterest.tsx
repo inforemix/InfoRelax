@@ -1,78 +1,20 @@
-import { useMemo } from 'react'
 import { useWorldStore } from '../../state/useWorldStore'
-import * as THREE from 'three'
 
+/**
+ * PointsOfInterest - Minimal visual representation
+ *
+ * POIs are primarily shown on the world map. In 3D space, we only show
+ * subtle visual cues for nearby discovered POIs to avoid visual clutter.
+ *
+ * The heavy sphere/cone rendering has been removed as it didn't fit
+ * the game's aesthetic.
+ */
 export function PointsOfInterest() {
   const world = useWorldStore((state) => state.world)
-  const discoveredPOIs = useWorldStore((state) => state.discoveredPOIs)
 
-  const poiMeshes = useMemo(() => {
-    if (!world) return []
+  if (!world) return null
 
-    try {
-      return world.pois
-        .map((poi) => {
-          try {
-            // Determine color based on type and discovery status
-            let color: THREE.ColorRepresentation = 0x888888
-            const isDiscovered = discoveredPOIs.has(poi.id)
-
-            switch (poi.type) {
-              case 'reef':
-                color = isDiscovered ? 0x0088ff : 0x004488
-                break
-              case 'wreck':
-                color = isDiscovered ? 0x8844ff : 0x442244
-                break
-              case 'buoy':
-                color = isDiscovered ? 0xff8800 : 0x884400
-                break
-              case 'wildlife':
-                color = isDiscovered ? 0x00ff88 : 0x008844
-                break
-              case 'research-station':
-                color = isDiscovered ? 0xffff00 : 0x888800
-                break
-            }
-
-            // Create a cone for undiscovered, sphere for discovered
-            let geometry: THREE.BufferGeometry
-            if (isDiscovered) {
-              geometry = new THREE.SphereGeometry(15, 16, 16)
-            } else {
-              geometry = new THREE.ConeGeometry(20, 30, 8)
-            }
-
-            const material = new THREE.MeshStandardMaterial({
-              color,
-              roughness: 0.6,
-              metalness: 0.3,
-              emissive: isDiscovered ? new THREE.Color(color).multiplyScalar(0.5) : 0x000000,
-            })
-
-            const mesh = new THREE.Mesh(geometry, material)
-            mesh.position.set(poi.position[0], isDiscovered ? 10 : 15, poi.position[1])
-            mesh.castShadow = true
-            mesh.receiveShadow = true
-
-            return mesh
-          } catch (error) {
-            console.error('Error creating POI mesh:', poi.id, error)
-            return null
-          }
-        })
-        .filter((mesh) => mesh !== null) as THREE.Mesh[]
-    } catch (error) {
-      console.error('Error creating POI meshes:', error)
-      return []
-    }
-  }, [world, discoveredPOIs])
-
-  return (
-    <>
-      {poiMeshes.map((mesh, i) => (
-        <primitive key={`poi-${i}`} object={mesh} />
-      ))}
-    </>
-  )
+  // POIs are now only shown on the minimap for cleaner visuals
+  // Future: Add subtle glow or particle effects for nearby POIs
+  return null
 }

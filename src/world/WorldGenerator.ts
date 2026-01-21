@@ -78,11 +78,13 @@ const DIFFICULTY_SETTINGS: Record<WorldDifficulty, {
   maxRadius: number;
   minHeight: number;
   maxHeight: number;
+  minSpawnDist: number;   // Minimum distance from marina
+  maxSpawnDist: number;   // Maximum distance from marina
 }> = {
-  peaceful: { icebergCount: 5, minRadius: 10, maxRadius: 25, minHeight: 8, maxHeight: 20 },
-  moderate: { icebergCount: 15, minRadius: 15, maxRadius: 35, minHeight: 12, maxHeight: 30 },
-  challenging: { icebergCount: 30, minRadius: 20, maxRadius: 45, minHeight: 15, maxHeight: 40 },
-  extreme: { icebergCount: 50, minRadius: 25, maxRadius: 55, minHeight: 20, maxHeight: 50 },
+  peaceful: { icebergCount: 12, minRadius: 12, maxRadius: 30, minHeight: 10, maxHeight: 25, minSpawnDist: 800, maxSpawnDist: 4000 },
+  moderate: { icebergCount: 35, minRadius: 15, maxRadius: 40, minHeight: 15, maxHeight: 35, minSpawnDist: 500, maxSpawnDist: 4500 },
+  challenging: { icebergCount: 60, minRadius: 20, maxRadius: 50, minHeight: 20, maxHeight: 45, minSpawnDist: 400, maxSpawnDist: 5000 },
+  extreme: { icebergCount: 100, minRadius: 25, maxRadius: 60, minHeight: 25, maxHeight: 55, minSpawnDist: 300, maxSpawnDist: 5000 },
 };
 
 export function generateWorld(seed: number, worldSize: number = 10000, difficulty: WorldDifficulty = 'moderate'): WorldData {
@@ -295,20 +297,28 @@ function generateIcebergs(
 ): Iceberg[] {
   const icebergs: Iceberg[] = [];
   const settings = DIFFICULTY_SETTINGS[difficulty];
+  const spawnRange = settings.maxSpawnDist - settings.minSpawnDist;
 
-  for (let i = 0; i < settings.icebergCount; i++) {
-    // Distribute icebergs across the world using golden angle for better distribution
+  let attempts = 0;
+  const maxAttempts = settings.icebergCount * 3; // Allow extra attempts for collisions
+
+  while (icebergs.length < settings.icebergCount && attempts < maxAttempts) {
+    attempts++;
+
+    // Use golden angle for initial distribution in the valid spawn zone
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-    const angle = i * goldenAngle;
-    const normalizedRadius = Math.sqrt((i + 0.5) / settings.icebergCount);
-    const worldRadius = Math.min(bounds.max[0], bounds.max[1]) * 0.85;
+    const angle = attempts * goldenAngle + perlin.noise(seed + attempts, 50) * 0.5;
 
-    let x = Math.cos(angle) * normalizedRadius * worldRadius;
-    let z = Math.sin(angle) * normalizedRadius * worldRadius;
+    // Distribute distance within spawn range - bias toward middle distances
+    const distNoise = Math.abs(perlin.noise(seed + attempts * 100, 100));
+    const spawnDist = settings.minSpawnDist + distNoise * spawnRange;
+
+    let x = Math.cos(angle) * spawnDist;
+    let z = Math.sin(angle) * spawnDist;
 
     // Add randomness using Perlin noise
-    x += perlin.noise(seed + i * 100, 100) * 500;
-    z += perlin.noise(seed + i * 101, 101) * 500;
+    x += perlin.noise(seed + attempts * 101, 101) * 300;
+    z += perlin.noise(seed + attempts * 102, 102) * 300;
 
     // Clamp to bounds
     x = Math.max(bounds.min[0] + 200, Math.min(bounds.max[0] - 200, x));
@@ -316,7 +326,7 @@ function generateIcebergs(
 
     // Skip if too close to marina (spawn area)
     const distToMarina = Math.sqrt(x * x + z * z);
-    if (distToMarina < 600) continue;
+    if (distToMarina < settings.minSpawnDist) continue;
 
     // Skip if too close to any island
     let tooCloseToIsland = false;
@@ -324,23 +334,36 @@ function generateIcebergs(
       const dx = x - island.position[0];
       const dz = z - island.position[1];
       const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < island.radius + 100) {
+      if (dist < island.radius + 80) {
         tooCloseToIsland = true;
         break;
       }
     }
     if (tooCloseToIsland) continue;
 
+    // Skip if too close to existing icebergs (prevents clustering)
+    let tooCloseToIceberg = false;
+    for (const existing of icebergs) {
+      const dx = x - existing.position[0];
+      const dz = z - existing.position[1];
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < existing.radius + settings.minRadius + 50) {
+        tooCloseToIceberg = true;
+        break;
+      }
+    }
+    if (tooCloseToIceberg) continue;
+
     // Generate iceberg properties
-    const radius = settings.minRadius + perlin.noise(seed + i * 102, 102) * (settings.maxRadius - settings.minRadius);
-    const height = settings.minHeight + perlin.noise(seed + i * 103, 103) * (settings.maxHeight - settings.minHeight);
+    const radius = settings.minRadius + Math.abs(perlin.noise(seed + attempts * 103, 103)) * (settings.maxRadius - settings.minRadius);
+    const height = settings.minHeight + Math.abs(perlin.noise(seed + attempts * 104, 104)) * (settings.maxHeight - settings.minHeight);
 
     icebergs.push({
-      id: `iceberg-${i}`,
+      id: `iceberg-${icebergs.length}`,
       position: [x, z],
       radius,
       height,
-      seed: seed + i * 1000,
+      seed: seed + attempts * 1000,
     });
   }
 
