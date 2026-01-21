@@ -101,7 +101,7 @@ export const useGameStore = create<GameState>()(
 
     player: {
       position: [0, 0, 150], // Spawn in front of marina pier
-      rotation: Math.PI, // Face toward the marina
+      rotation: 0, // Face away from the marina (180° rotated from previous)
       speed: 0,
       throttle: 0,
       steering: 0,

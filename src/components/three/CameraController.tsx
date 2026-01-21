@@ -17,6 +17,30 @@ export function CameraController() {
   // Track if we need to reset camera
   const shouldReset = useRef(false)
   const lastGameMode = useRef(gameMode)
+  const isInteracting = useRef(false)
+
+  // Track user interaction with controls
+  useEffect(() => {
+    if (!controlsRef.current) return
+
+    const controls = controlsRef.current
+
+    const handleStart = () => {
+      isInteracting.current = true
+    }
+
+    const handleEnd = () => {
+      isInteracting.current = false
+    }
+
+    controls.addEventListener('start', handleStart)
+    controls.addEventListener('end', handleEnd)
+
+    return () => {
+      controls.removeEventListener('start', handleStart)
+      controls.removeEventListener('end', handleEnd)
+    }
+  }, [])
 
   // Handle V key for camera mode toggle
   useEffect(() => {
@@ -68,8 +92,10 @@ export function CameraController() {
     // Build mode: camera targets yacht, user can orbit
     if (gameMode === 'build') {
       controlsRef.current.enabled = true
-      // Smoothly follow yacht position (in case it's moving)
-      controlsRef.current.target.lerp(yachtPos, 0.1)
+      // Smoothly follow yacht position only when not interacting
+      if (!isInteracting.current) {
+        controlsRef.current.target.lerp(yachtPos, 0.1)
+      }
       return
     }
 
@@ -99,8 +125,11 @@ export function CameraController() {
       // Third-person: enable orbit controls, target follows yacht
       controlsRef.current.enabled = true
 
-      // Update orbit target to follow yacht
-      controlsRef.current.target.lerp(yachtPos, 0.1)
+      // Update orbit target to follow yacht only when not interacting
+      // This preserves the focal point during zoom/pan/rotate
+      if (!isInteracting.current) {
+        controlsRef.current.target.lerp(yachtPos, 0.1)
+      }
 
       // Reset camera to default back view position (N key)
       if (shouldReset.current) {

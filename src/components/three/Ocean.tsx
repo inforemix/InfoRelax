@@ -14,7 +14,7 @@ interface OceanProps {
 export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
   const waterRef = useRef<Water>(null)
   const { scene } = useThree()
-  const { setWind, setWeather } = useGameStore()
+  const { setWind, setWeather, player } = useGameStore()
 
   // Load water normal texture
   const waterNormals = useTexture('/textures/waternormals.jpg', (texture) => {
@@ -103,13 +103,18 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     }
   }, [water, waterColor, sunColor, distortionScale, waveSize])
 
-  // Animate the water
+  // Animate the water and follow player for infinite ocean effect
   useFrame((_, delta) => {
     if (water && water.material) {
       const uniforms = (water.material as THREE.ShaderMaterial).uniforms
       if (uniforms && uniforms.time) {
         uniforms.time.value += delta * waveSpeed
       }
+
+      // Make ocean follow player position (infinite ocean effect)
+      // Only update X and Z, keep Y at 0 (sea level)
+      water.position.x = player.position[0]
+      water.position.z = player.position[2]
     }
   })
 
