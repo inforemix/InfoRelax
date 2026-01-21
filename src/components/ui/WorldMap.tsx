@@ -43,17 +43,19 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
     // Clear canvas
     ctx.clearRect(0, 0, size, size)
 
-    // Draw water background
-    const waterGradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-    waterGradient.addColorStop(0, '#4a90a4')
-    waterGradient.addColorStop(1, '#2a5a6a')
-    ctx.fillStyle = waterGradient
-    ctx.fillRect(0, 0, size, size)
+    // Draw water background (with safety check)
+    if (size > 0) {
+      const waterGradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, Math.max(1, size / 2))
+      waterGradient.addColorStop(0, '#4a90a4')
+      waterGradient.addColorStop(1, '#2a5a6a')
+      ctx.fillStyle = waterGradient
+      ctx.fillRect(0, 0, size, size)
+    }
 
     // Draw wind zones (semi-transparent circles)
     world.windZones.forEach((zone) => {
       const [cx, cy] = worldToCanvas(zone.position[0], zone.position[1])
-      const radius = zone.radius * scaleX
+      const radius = Math.max(1, zone.radius * scaleX) // Ensure positive radius
 
       ctx.save()
       ctx.globalAlpha = 0.2
@@ -79,29 +81,31 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
       ctx.fill()
       ctx.restore()
 
-      // Draw wind direction arrow
-      ctx.save()
-      ctx.translate(cx, cy)
-      ctx.rotate((zone.direction * Math.PI) / 180)
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2
-      ctx.globalAlpha = 0.5
+      // Draw wind direction arrow (only if radius is large enough)
+      if (radius > 10) {
+        ctx.save()
+        ctx.translate(cx, cy)
+        ctx.rotate((zone.direction * Math.PI) / 180)
+        ctx.strokeStyle = '#ffffff'
+        ctx.lineWidth = 2
+        ctx.globalAlpha = 0.5
 
-      ctx.beginPath()
-      ctx.moveTo(0, -radius * 0.3)
-      ctx.lineTo(0, radius * 0.3)
-      ctx.moveTo(0, -radius * 0.3)
-      ctx.lineTo(-radius * 0.1, -radius * 0.2)
-      ctx.moveTo(0, -radius * 0.3)
-      ctx.lineTo(radius * 0.1, -radius * 0.2)
-      ctx.stroke()
-      ctx.restore()
+        ctx.beginPath()
+        ctx.moveTo(0, -radius * 0.3)
+        ctx.lineTo(0, radius * 0.3)
+        ctx.moveTo(0, -radius * 0.3)
+        ctx.lineTo(-radius * 0.1, -radius * 0.2)
+        ctx.moveTo(0, -radius * 0.3)
+        ctx.lineTo(radius * 0.1, -radius * 0.2)
+        ctx.stroke()
+        ctx.restore()
+      }
     })
 
     // Draw islands
     world.islands.forEach((island) => {
       const [cx, cy] = worldToCanvas(island.position[0], island.position[1])
-      const radius = island.radius * scaleX
+      const radius = Math.max(2, island.radius * scaleX) // Ensure positive radius with minimum size
 
       // Island color based on type
       let fillColor: string
@@ -119,12 +123,16 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
           fillColor = '#888888'
       }
 
-      // Draw island with gradient
-      const islandGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius)
-      islandGradient.addColorStop(0, fillColor)
-      islandGradient.addColorStop(1, fillColor + '80') // Add transparency to edge
+      // Draw island with gradient (with safety check)
+      if (radius > 0.5) {
+        const islandGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius)
+        islandGradient.addColorStop(0, fillColor)
+        islandGradient.addColorStop(1, fillColor + '80') // Add transparency to edge
+        ctx.fillStyle = islandGradient
+      } else {
+        ctx.fillStyle = fillColor
+      }
 
-      ctx.fillStyle = islandGradient
       ctx.beginPath()
       ctx.arc(cx, cy, radius, 0, Math.PI * 2)
       ctx.fill()
@@ -190,6 +198,7 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
     if (currentRace) {
       currentRace.checkpoints.forEach((checkpoint, index) => {
         const [cpx, cpy] = worldToCanvas(checkpoint.position[0], checkpoint.position[1])
+        const cpRadius = Math.max(3, checkpoint.radius * scaleX) // Ensure positive radius with minimum size
         const isCurrentCheckpoint = index === currentCheckpoint
         const isPassed = index < currentCheckpoint
 
@@ -202,7 +211,7 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
         ctx.lineWidth = isCurrentCheckpoint ? 3 : 2
 
         ctx.beginPath()
-        ctx.arc(cpx, cpy, checkpoint.radius * scaleX, 0, Math.PI * 2)
+        ctx.arc(cpx, cpy, cpRadius, 0, Math.PI * 2)
         ctx.fill()
         ctx.stroke()
 
