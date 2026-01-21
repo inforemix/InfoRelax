@@ -231,7 +231,10 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
 
     ctx.save()
     ctx.translate(px, py)
-    ctx.rotate(player.rotation)
+    // Add PI to align boat direction with movement direction on map
+    // In 3D: rotation=0 means moving +Z, which maps to +canvasY (down)
+    // Triangle points up by default, so we add PI to flip it
+    ctx.rotate(player.rotation + Math.PI)
 
     // Draw yacht triangle
     ctx.fillStyle = '#00ff00'

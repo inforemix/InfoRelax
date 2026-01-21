@@ -90,6 +90,9 @@ export function Islands() {
               metalness: 0.1,
               transparent: true,
               opacity: 0.8,
+              depthWrite: true,
+              depthTest: true,
+              side: THREE.FrontSide,
             })
             const beachMesh = new THREE.Mesh(iceShelfGeometry, iceShelfMaterial)
             beachMesh.position.set(island.position[0], 0, island.position[1])

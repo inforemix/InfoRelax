@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type RaceDifficulty = 'peaceful' | 'moderate' | 'challenging';
+
 export interface Checkpoint {
   id: string;
   position: [number, number];
@@ -13,6 +15,12 @@ export interface RaceConfig {
   checkpoints: Checkpoint[];
   laps: number;
   difficultyMultiplier: number; // Affects wind conditions
+}
+
+export interface BoatDamage {
+  hullIntegrity: number; // 0-100%
+  collisionCount: number;
+  lastCollisionTime: number | null;
 }
 
 export interface LapData {
@@ -32,6 +40,12 @@ export interface RaceState {
   currentCheckpoint: number;
   lapTimes: LapData[];
 
+  // Difficulty and damage
+  difficulty: RaceDifficulty;
+  damage: BoatDamage;
+  raceFinished: boolean;
+  finishTime: number | null;
+
   // Leaderboard
   leaderboard: Array<{
     rank: number;
@@ -40,18 +54,22 @@ export interface RaceState {
     totalTime: number;
     completedLaps: number;
     personalBest: number;
+    collisions: number;
+    finalIntegrity: number;
   }>;
 
   // Actions
+  setDifficulty: (difficulty: RaceDifficulty) => void;
   startRace: (config: RaceConfig, playerName: string) => void;
   passCheckpoint: (checkpointId: string) => void;
   completeLap: () => void;
   finishRace: () => void;
   abandonRace: () => void;
   updateLeaderboard: (entry: any) => void;
+  registerCollision: (damageAmount: number) => void;
 }
 
-export const useRaceStore = create<RaceState>((set) => ({
+export const useRaceStore = create<RaceState>((set, get) => ({
   currentRace: null,
   isRacing: false,
   raceStartTime: null,
@@ -59,6 +77,18 @@ export const useRaceStore = create<RaceState>((set) => ({
   currentCheckpoint: 0,
   lapTimes: [],
   leaderboard: [],
+  difficulty: 'moderate',
+  damage: {
+    hullIntegrity: 100,
+    collisionCount: 0,
+    lastCollisionTime: null,
+  },
+  raceFinished: false,
+  finishTime: null,
+
+  setDifficulty: (difficulty: RaceDifficulty) => {
+    set({ difficulty });
+  },
 
   startRace: (config: RaceConfig, _playerName: string) => {
     set({
@@ -67,6 +97,13 @@ export const useRaceStore = create<RaceState>((set) => ({
       raceStartTime: Date.now(),
       currentLap: 1,
       currentCheckpoint: 0,
+      raceFinished: false,
+      finishTime: null,
+      damage: {
+        hullIntegrity: 100,
+        collisionCount: 0,
+        lastCollisionTime: null,
+      },
       lapTimes: [
         {
           lapNumber: 1,
@@ -146,7 +183,12 @@ export const useRaceStore = create<RaceState>((set) => ({
   },
 
   finishRace: () => {
-    set({ isRacing: false });
+    const state = get();
+    set({
+      isRacing: false,
+      raceFinished: true,
+      finishTime: state.raceStartTime ? Date.now() - state.raceStartTime : null,
+    });
   },
 
   abandonRace: () => {
@@ -157,6 +199,13 @@ export const useRaceStore = create<RaceState>((set) => ({
       currentLap: 1,
       currentCheckpoint: 0,
       lapTimes: [],
+      raceFinished: false,
+      finishTime: null,
+      damage: {
+        hullIntegrity: 100,
+        collisionCount: 0,
+        lastCollisionTime: null,
+      },
     });
   },
 
@@ -185,5 +234,39 @@ export const useRaceStore = create<RaceState>((set) => ({
 
       return { leaderboard: updated };
     });
+  },
+
+  registerCollision: (damageAmount: number) => {
+    const state = get();
+    if (!state.isRacing) return;
+
+    // Cooldown to prevent multiple registrations
+    const now = Date.now();
+    if (state.damage.lastCollisionTime && now - state.damage.lastCollisionTime < 1000) {
+      return;
+    }
+
+    // Damage based on difficulty
+    const difficultyMultiplier = {
+      peaceful: 0.5,
+      moderate: 1.0,
+      challenging: 1.5,
+    };
+
+    const actualDamage = damageAmount * difficultyMultiplier[state.difficulty];
+    const newIntegrity = Math.max(0, state.damage.hullIntegrity - actualDamage);
+
+    set({
+      damage: {
+        hullIntegrity: newIntegrity,
+        collisionCount: state.damage.collisionCount + 1,
+        lastCollisionTime: now,
+      },
+    });
+
+    // Auto-fail race if hull integrity is 0
+    if (newIntegrity <= 0) {
+      set({ isRacing: false, raceFinished: true });
+    }
   },
 }));

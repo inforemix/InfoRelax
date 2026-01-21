@@ -1,10 +1,11 @@
 import { RaceConfig } from '../state/useRaceStore';
 
+// All races are A-to-B format (1 lap) for MVP
 export const RACE_CONFIGS: Record<string, RaceConfig> = {
   'bay-circuit': {
     id: 'bay-circuit',
-    name: 'Bay Circuit Race',
-    laps: 3,
+    name: 'Bay Circuit',
+    laps: 1, // MVP: A-to-B format
     difficultyMultiplier: 1.0,
     checkpoints: [
       {
@@ -35,8 +36,8 @@ export const RACE_CONFIGS: Record<string, RaceConfig> = {
   },
   'island-hopper': {
     id: 'island-hopper',
-    name: 'Island Hopper Challenge',
-    laps: 2,
+    name: 'Island Hopper',
+    laps: 1, // MVP: A-to-B format
     difficultyMultiplier: 1.3,
     checkpoints: [
       {

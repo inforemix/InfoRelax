@@ -1,9 +1,7 @@
 import { useGameStore } from '@/state/useGameStore'
-import { useYachtStore } from '@/state/useYachtStore'
 
 export function HUD() {
-  const { wind, energy, energyCredits, player, timeOfDay } = useGameStore()
-  const { stats, currentYacht } = useYachtStore()
+  const { wind, energy, energyCredits, player, timeOfDay, battery } = useGameStore()
   
   // Format energy credits
   const formatEC = (ec: number) => {
@@ -130,23 +128,23 @@ export function HUD() {
         {/* Battery Bar */}
         <div className="mt-3">
           <div className="flex justify-between text-xs text-slate-400 mb-1">
-            <span>🔋 Battery</span>
-            <span>{currentYacht.battery.currentCharge}%</span>
+            <span>Battery</span>
+            <span>{battery.chargePercent.toFixed(0)}%</span>
           </div>
           <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full transition-all ${
-                currentYacht.battery.currentCharge > 50 
-                  ? 'bg-green-500' 
-                  : currentYacht.battery.currentCharge > 20 
-                    ? 'bg-yellow-500' 
+                battery.chargePercent > 50
+                  ? 'bg-green-500'
+                  : battery.chargePercent > 20
+                    ? 'bg-yellow-500'
                     : 'bg-red-500'
               }`}
-              style={{ width: `${currentYacht.battery.currentCharge}%` }}
+              style={{ width: `${battery.chargePercent}%` }}
             />
           </div>
           <div className="text-xs text-slate-400 mt-1 text-right">
-            Range: {stats.range.toFixed(0)} km
+            {battery.currentCharge.toFixed(1)} / {battery.capacity} kWh
           </div>
         </div>
       </div>

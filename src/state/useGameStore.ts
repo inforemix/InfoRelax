@@ -21,6 +21,12 @@ export interface EnergyState {
   netPower: number         // kW (positive = charging)
 }
 
+export interface BatteryState {
+  currentCharge: number    // kWh stored
+  chargePercent: number    // 0-100%
+  capacity: number         // kWh total
+}
+
 export interface PlayerState {
   position: [number, number, number]
   rotation: number         // Y-axis rotation (radians)
@@ -45,6 +51,7 @@ interface GameState {
   // Energy
   energy: EnergyState
   energyCredits: number    // Total EC earned
+  battery: BatteryState    // Dynamic battery state
 
   // Player
   player: PlayerState
@@ -98,6 +105,12 @@ export const useGameStore = create<GameState>()(
     },
 
     energyCredits: 0,
+
+    battery: {
+      currentCharge: 75,  // kWh stored (starts at 75% of 100 kWh)
+      chargePercent: 75,  // 0-100%
+      capacity: 100,      // kWh total
+    },
 
     player: {
       position: [0, 0, 150], // Spawn in front of marina pier
@@ -292,6 +305,10 @@ export const useGameStore = create<GameState>()(
       // Earn energy credits (only for positive generation)
       const energyGenerated = (safeTurbineOutput + solarOutput) * delta / 3600 // kWh
 
+      // Calculate battery change
+      const energyDelta = netPower * delta / 3600 // kWh change
+      const chargingEfficiency = netPower > 0 ? 0.95 : 1.0 // 95% efficiency when charging
+
       set((state) => {
         state.energy.turbineOutput = safeTurbineOutput
         state.energy.solarOutput = solarOutput
@@ -299,6 +316,12 @@ export const useGameStore = create<GameState>()(
         state.energy.systemsConsumption = systemsConsumption
         state.energy.netPower = netPower
         state.energyCredits += energyGenerated
+
+        // Update battery state
+        let newCharge = state.battery.currentCharge + energyDelta * chargingEfficiency
+        newCharge = Math.max(0, Math.min(state.battery.capacity, newCharge))
+        state.battery.currentCharge = newCharge
+        state.battery.chargePercent = (newCharge / state.battery.capacity) * 100
       })
     },
     
