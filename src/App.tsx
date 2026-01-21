@@ -13,6 +13,9 @@ import { Marina } from './components/three/Marina'
 import { EnvironmentDetails } from './components/three/EnvironmentDetails'
 import { PointsOfInterest } from './components/three/PointsOfInterest'
 import { RaceCheckpoints } from './components/three/RaceCheckpoints'
+import { WeatherEffects } from './components/three/WeatherEffects'
+import { DynamicLighting } from './components/three/DynamicLighting'
+import { ProceduralClouds } from './components/three/ProceduralClouds'
 import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
@@ -61,14 +64,14 @@ export default function App() {
         gl={{ antialias: true, alpha: false }}
       >
         <Suspense fallback={null}>
-          {/* Lighting */}
-          <ambientLight intensity={0.4} />
-          <directionalLight
-            position={[50, 50, 25]}
-            intensity={1.5}
-            castShadow
-            shadow-mapSize={[2048, 2048]}
-          />
+          {/* Dynamic Lighting System */}
+          <DynamicLighting />
+
+          {/* Weather Visual Effects */}
+          <WeatherEffects />
+
+          {/* Procedural Clouds */}
+          <ProceduralClouds />
 
           {/* Environment */}
           <Sky
@@ -78,7 +81,7 @@ export default function App() {
             azimuth={0.25}
           />
           <Stars radius={100} depth={50} count={5000} factor={4} fade />
-          <fog attach="fog" args={['#87CEEB', 100, 500]} />
+          <fogExp2 attach="fog" args={['#b0c4de', 0.0008]} />
 
           {/* Ocean */}
           <Ocean />

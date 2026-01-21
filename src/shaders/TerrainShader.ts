@@ -213,6 +213,15 @@ export function createTerrainMaterial(maxHeight: number, islandType: string): TH
   let sandColor, grassColor, rockColor, snowColor, waterColor
 
   switch (islandType) {
+    case 'iceberg':
+    case 'arctic':
+      // Arctic/Iceberg palette - pure ice and snow
+      sandColor = new THREE.Color(0xd0e8f0) // Ice blue base
+      grassColor = new THREE.Color(0xe0f0f5) // Light ice
+      rockColor = new THREE.Color(0xa0c8d8) // Deep ice blue
+      snowColor = new THREE.Color(0xffffff) // Pure white snow
+      waterColor = new THREE.Color(0xb8d8e8) // Icy water
+      break
     case 'volcanic':
       sandColor = new THREE.Color(0x2a2a2a) // Dark volcanic sand
       grassColor = new THREE.Color(0x3a5a3a) // Dark green

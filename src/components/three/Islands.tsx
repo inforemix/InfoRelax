@@ -17,10 +17,9 @@ export function Islands() {
       return world.islands
         .map((island) => {
           try {
-            // Create high-resolution terrain mesh
-            // Increased segments for smoother, more detailed terrain
-            const radialSegments = 64  // Doubled from 32
-            const heightSegments = 16  // Doubled from 8
+            // Create high-resolution iceberg/arctic terrain mesh
+            const radialSegments = 64
+            const heightSegments = 16
             const geometry = new THREE.ConeGeometry(
               island.radius,
               island.height,
@@ -28,7 +27,7 @@ export function Islands() {
               heightSegments
             )
 
-            // Apply elevation function to geometry vertices with enhanced detail
+            // Apply elevation function to geometry vertices with iceberg-like deformation
             const positionAttribute = geometry.getAttribute('position')
             const positions = positionAttribute.array as Float32Array
 
@@ -38,36 +37,45 @@ export function Islands() {
               const worldX = localX + island.position[0]
               const worldZ = localZ + island.position[1]
 
-              // Get base elevation from world generator
+              // Get base elevation
               const baseY = island.elevation(worldX, worldZ)
 
-              // Add micro-detail variation for realism
               const distFromCenter = Math.sqrt(localX * localX + localZ * localZ)
               const normalizedDist = distFromCenter / island.radius
 
-              // Add subtle noise-based detail that doesn't affect overall shape
-              const detail = Math.sin(worldX * 0.5) * Math.cos(worldZ * 0.5) * 2
-              const detailStrength = Math.pow(1 - normalizedDist, 2) * 0.3
+              // Iceberg-style irregular deformation
+              // Add dramatic vertical striations and jagged edges
+              const verticalStripes = Math.sin(worldX * 0.3) * Math.cos(worldZ * 0.3) * 8
+              const jaggedEdges = Math.sin(worldX * 0.8 + worldZ * 0.6) * 4
+              const erosion = Math.pow(Math.sin(worldX * 1.5) * Math.cos(worldZ * 1.5), 2) * 6
 
-              const finalY = baseY + detail * detailStrength
+              // Combine effects - stronger at mid-heights for that sculpted look
+              const heightFactor = Math.sin(normalizedDist * Math.PI) // Peaks at middle
+              const icebergDetail = (verticalStripes + jaggedEdges + erosion) * heightFactor
+
+              // Add underwater portion (icebergs extend below water)
+              const underwaterExtension = normalizedDist > 0.8 ? -island.height * 0.3 : 0
+
+              const finalY = baseY + icebergDetail + underwaterExtension
               positions[i + 1] = isNaN(finalY) || !isFinite(finalY) ? 0 : finalY
             }
 
             positionAttribute.needsUpdate = true
             geometry.computeVertexNormals()
 
-            // Add beach/shore vertices by duplicating and lowering base vertices
-            const beachGeometry = geometry.clone()
-            const beachPositions = beachGeometry.getAttribute('position').array as Float32Array
-            for (let i = 0; i < beachPositions.length; i += 3) {
-              if (beachPositions[i + 1] < island.height * 0.1) {
-                beachPositions[i + 1] = -1 // Slightly below water level
+            // Add underwater ice shelf by duplicating and extending base
+            const iceShelfGeometry = geometry.clone()
+            const shelfPositions = iceShelfGeometry.getAttribute('position').array as Float32Array
+            for (let i = 0; i < shelfPositions.length; i += 3) {
+              if (shelfPositions[i + 1] < island.height * 0.2) {
+                shelfPositions[i + 1] = Math.min(shelfPositions[i + 1], -5) // Extend underwater
               }
             }
-            beachGeometry.computeVertexNormals()
+            iceShelfGeometry.computeVertexNormals()
 
-            // Create advanced terrain material with shader
-            const material = createTerrainMaterial(island.height, island.type)
+            // Create iceberg material with 'iceberg' or 'arctic' type
+            const icebergType = island.type === 'volcanic' ? 'volcanic' : 'iceberg'
+            const material = createTerrainMaterial(island.height, icebergType)
             materialsRef.current.push(material)
 
             const mesh = new THREE.Mesh(geometry, material)
@@ -75,53 +83,20 @@ export function Islands() {
             mesh.castShadow = true
             mesh.receiveShadow = true
 
-            // Create beach mesh with standard material
-            const beachMaterial = new THREE.MeshStandardMaterial({
-              color: island.type === 'volcanic' ? 0x3a3a3a :
-                     island.type === 'coral' ? 0xffd4a3 : 0xf4e4c1,
-              roughness: 0.9,
-              metalness: 0,
+            // Create ice shelf mesh with translucent ice material
+            const iceShelfMaterial = new THREE.MeshStandardMaterial({
+              color: 0xc8e8f0,
+              roughness: 0.1,
+              metalness: 0.1,
+              transparent: true,
+              opacity: 0.8,
             })
-            const beachMesh = new THREE.Mesh(beachGeometry, beachMaterial)
+            const beachMesh = new THREE.Mesh(iceShelfGeometry, iceShelfMaterial)
             beachMesh.position.set(island.position[0], 0, island.position[1])
             beachMesh.receiveShadow = true
 
-            // Add vegetation instances for grass/rock zones (simple cylinders for trees)
+            // No vegetation on icebergs - they're pure ice and snow
             const vegetation: THREE.Mesh[] = []
-            if (island.height > 80) {
-              const treeCount = Math.floor(island.radius / 50)
-              for (let t = 0; t < treeCount; t++) {
-                const angle = (t / treeCount) * Math.PI * 2 + Math.random() * 0.5
-                const dist = island.radius * (0.3 + Math.random() * 0.3)
-                const treeX = island.position[0] + Math.cos(angle) * dist
-                const treeZ = island.position[1] + Math.sin(angle) * dist
-                const treeY = island.elevation(treeX, treeZ)
-
-                if (treeY > island.height * 0.2 && treeY < island.height * 0.6) {
-                  // Tree trunk
-                  const trunkGeo = new THREE.CylinderGeometry(1.5, 2, 8, 6)
-                  const trunkMat = new THREE.MeshStandardMaterial({
-                    color: 0x4a3728,
-                    roughness: 0.9
-                  })
-                  const trunk = new THREE.Mesh(trunkGeo, trunkMat)
-                  trunk.position.set(treeX, treeY + 4, treeZ)
-                  trunk.castShadow = true
-                  vegetation.push(trunk)
-
-                  // Tree foliage
-                  const foliageGeo = new THREE.ConeGeometry(5, 12, 6)
-                  const foliageMat = new THREE.MeshStandardMaterial({
-                    color: island.type === 'volcanic' ? 0x2a4a2a : 0x3a7a3a,
-                    roughness: 0.8
-                  })
-                  const foliage = new THREE.Mesh(foliageGeo, foliageMat)
-                  foliage.position.set(treeX, treeY + 12, treeZ)
-                  foliage.castShadow = true
-                  vegetation.push(foliage)
-                }
-              }
-            }
 
             return { mesh, beachMesh, vegetation, island, material }
           } catch (error) {
