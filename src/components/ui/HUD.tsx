@@ -1,7 +1,7 @@
 import { useGameStore } from '@/state/useGameStore'
 
 export function HUD() {
-  const { wind, energy, energyCredits, player, timeOfDay, battery } = useGameStore()
+  const { wind, energy, energyCredits, player, timeOfDay, battery, boatDamage } = useGameStore()
   
   // Format energy credits
   const formatEC = (ec: number) => {
@@ -20,6 +20,33 @@ export function HUD() {
       <div className="absolute top-4 left-4 glass rounded-xl p-4">
         <div className="text-2xl font-mono text-white">{timeString}</div>
         <div className="text-sm text-cyan-400">Trade Winds</div>
+
+        {/* Hull Integrity */}
+        <div className="mt-3 pt-3 border-t border-slate-600">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-slate-400">Hull</span>
+            <span className={`font-bold ${
+              boatDamage.hullIntegrity > 50 ? 'text-green-400' :
+              boatDamage.hullIntegrity > 20 ? 'text-yellow-400' : 'text-red-400'
+            }`}>
+              {boatDamage.hullIntegrity.toFixed(0)}%
+            </span>
+          </div>
+          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-300 ${
+                boatDamage.hullIntegrity > 50 ? 'bg-green-500' :
+                boatDamage.hullIntegrity > 20 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${boatDamage.hullIntegrity}%` }}
+            />
+          </div>
+          {boatDamage.collisionCount > 0 && (
+            <div className="text-xs text-red-400 mt-1">
+              Collisions: {boatDamage.collisionCount}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom Center: Wind, Speed & Throttle */}

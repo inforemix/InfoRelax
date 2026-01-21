@@ -27,6 +27,13 @@ export interface BatteryState {
   capacity: number         // kWh total
 }
 
+export interface BoatDamageState {
+  hullIntegrity: number    // 0-100%
+  collisionCount: number
+  lastCollisionTime: number | null
+  lastCollisionIcebergId: string | null
+}
+
 export interface PlayerState {
   position: [number, number, number]
   rotation: number         // Y-axis rotation (radians)
@@ -56,6 +63,9 @@ interface GameState {
   // Player
   player: PlayerState
 
+  // Boat damage (persistent across racing and free sailing)
+  boatDamage: BoatDamageState
+
   // World state
   currentWindZone: string | null  // Wind zone ID if in one
   nearbyCheckpoints: string[]     // Checkpoint IDs in range
@@ -75,6 +85,8 @@ interface GameState {
   updateEnergy: (delta: number) => void
   updateCheckpointDetection: (checkpoints: any[]) => void
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
+  handleCollision: (icebergId: string, penetration: number, normalX: number, normalZ: number, icebergRadius: number) => void
+  repairBoat: () => void
 }
 
 // Use weather presets from WindSystem (re-export for compatibility)
@@ -118,6 +130,13 @@ export const useGameStore = create<GameState>()(
       speed: 0,
       throttle: 0,
       steering: 0,
+    },
+
+    boatDamage: {
+      hullIntegrity: 100,
+      collisionCount: 0,
+      lastCollisionTime: null,
+      lastCollisionIcebergId: null,
     },
 
     currentWindZone: null,
@@ -353,6 +372,64 @@ export const useGameStore = create<GameState>()(
 
       // Update energy calculations
       get().updateEnergy(delta)
+    },
+
+    handleCollision: (icebergId, penetration, normalX, normalZ, icebergRadius) => {
+      const now = Date.now()
+      const state = get()
+
+      // Cooldown check - prevent multiple collisions with same iceberg
+      if (
+        state.boatDamage.lastCollisionIcebergId === icebergId &&
+        state.boatDamage.lastCollisionTime &&
+        now - state.boatDamage.lastCollisionTime < 2000
+      ) {
+        // Just push the boat away without registering new damage
+        set((s) => {
+          s.player.position[0] += normalX * penetration * 1.5
+          s.player.position[2] += normalZ * penetration * 1.5
+          // Reduce speed on collision
+          s.player.speed *= 0.5
+        })
+        return
+      }
+
+      // Calculate damage based on speed and iceberg size
+      const speedFactor = Math.max(1, state.player.speed / 5)
+      const sizeFactor = Math.max(1, icebergRadius / 20)
+      const baseDamage = 5 + penetration * 0.5
+      const totalDamage = baseDamage * speedFactor * sizeFactor
+
+      set((s) => {
+        // Apply collision response - push boat away
+        s.player.position[0] += normalX * penetration * 1.5
+        s.player.position[2] += normalZ * penetration * 1.5
+
+        // Bounce effect - reflect velocity somewhat
+        const dotProduct = Math.sin(s.player.rotation) * normalX + Math.cos(s.player.rotation) * normalZ
+        if (dotProduct < 0) {
+          // Boat is moving toward iceberg, reflect
+          s.player.rotation += Math.PI * 0.3 * (normalX > 0 ? 1 : -1)
+        }
+
+        // Reduce speed significantly on collision
+        s.player.speed *= 0.3
+
+        // Apply damage
+        s.boatDamage.hullIntegrity = Math.max(0, s.boatDamage.hullIntegrity - totalDamage)
+        s.boatDamage.collisionCount += 1
+        s.boatDamage.lastCollisionTime = now
+        s.boatDamage.lastCollisionIcebergId = icebergId
+      })
+    },
+
+    repairBoat: () => {
+      set((state) => {
+        state.boatDamage.hullIntegrity = 100
+        state.boatDamage.collisionCount = 0
+        state.boatDamage.lastCollisionTime = null
+        state.boatDamage.lastCollisionIcebergId = null
+      })
     },
   }))
 )

@@ -37,8 +37,6 @@ import { useIcebergCollision } from './hooks/useIcebergCollision'
 export default function App() {
   const { gameMode, setGameMode } = useGameStore()
   const currentRace = useRaceStore((state) => state.currentRace)
-  const isRacing = useRaceStore((state) => state.isRacing)
-  const difficulty = useRaceStore((state) => state.difficulty)
   const gameStarted = useLandingStore((state) => state.gameStarted)
 
   // Initialize world on mount - only if game has started
@@ -96,9 +94,11 @@ export default function App() {
           {/* Player Yacht */}
           <Yacht />
 
+          {/* World Icebergs - Always visible */}
+          <Icebergs />
+
           {/* Racing */}
           {currentRace && <RaceCheckpoints />}
-          {isRacing && <Icebergs difficulty={difficulty} />}
 
           {/* Wind Indicator */}
           <WindIndicator />
