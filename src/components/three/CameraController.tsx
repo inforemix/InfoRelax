@@ -86,6 +86,13 @@ export function CameraController() {
     }
   }, [keys.cameraPreset4])
 
+  // Handle 5 key for distant camera view
+  useEffect(() => {
+    if (keys.cameraPreset5) {
+      cameraPreset.current = 5
+    }
+  }, [keys.cameraPreset5])
+
   useFrame(() => {
     if (!controlsRef.current) return
 
@@ -211,6 +218,14 @@ export function CameraController() {
               yachtPos.x - Math.sin(player.rotation) * 25,
               yachtPos.y + 12,
               yachtPos.z - Math.cos(player.rotation) * 25
+            )
+            break
+
+          case 5: // Distant view (50m behind, 20m above)
+            presetPos = new THREE.Vector3(
+              yachtPos.x - Math.sin(player.rotation) * 50,
+              yachtPos.y + 20,
+              yachtPos.z - Math.cos(player.rotation) * 50
             )
             break
 

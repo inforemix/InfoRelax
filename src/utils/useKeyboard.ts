@@ -12,6 +12,7 @@ interface KeyState {
   cameraPreset2: boolean // 2 (side view)
   cameraPreset3: boolean // 3 (bird's eye view)
   cameraPreset4: boolean // 4 (default view - like start)
+  cameraPreset5: boolean // 5 (distant view - 50m behind, 20m above)
 }
 
 export function useKeyboard(): KeyState {
@@ -27,6 +28,7 @@ export function useKeyboard(): KeyState {
     cameraPreset2: false,
     cameraPreset3: false,
     cameraPreset4: false,
+    cameraPreset5: false,
   })
 
   useEffect(() => {
@@ -86,6 +88,11 @@ export function useKeyboard(): KeyState {
           // Camera preset 4: Default view (like game start)
           setKeys((k) => ({ ...k, cameraPreset4: true }))
           setTimeout(() => setKeys((k) => ({ ...k, cameraPreset4: false })), 100)
+          break
+        case 'Digit5':
+          // Camera preset 5: Distant view (50m behind, 20m above)
+          setKeys((k) => ({ ...k, cameraPreset5: true }))
+          setTimeout(() => setKeys((k) => ({ ...k, cameraPreset5: false })), 100)
           break
       }
     }

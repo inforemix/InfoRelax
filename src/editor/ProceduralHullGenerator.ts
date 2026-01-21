@@ -387,10 +387,23 @@ function generateCrossSection(
     heightMultiplier = 1
   }
 
-  // Apply waterline profile if exists
+  // Apply waterline profile if exists (affects beam/width)
   if (config.waterlineProfile.length > 0) {
     const waterlinePoint = interpolatePath2D(config.waterlineProfile, position)
     widthMultiplier *= Math.abs(waterlinePoint.y) + 0.5
+  }
+
+  // Apply buttock profile if exists (affects height/draft)
+  if (config.buttockProfile.length > 0) {
+    const buttockPoint = interpolatePath2D(config.buttockProfile, position)
+    heightMultiplier *= Math.abs(buttockPoint.y) + 0.5
+  }
+
+  // Apply custom cross-section if exists for this position
+  const sectionIndex = Math.round(position * 10)
+  const customSection = config.crossSections[sectionIndex]
+  if (customSection && customSection.profile.length > 0) {
+    widthMultiplier *= customSection.beamMultiplier || 1
   }
 
   // Generate cross-section points

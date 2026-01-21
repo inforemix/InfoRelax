@@ -731,10 +731,10 @@ export function BuildMode() {
         </div>
       </div>
 
-      {/* Right Panel - 2/3 preview (transparent) */}
-      <div className="w-2/3 h-full relative">
+      {/* Right Panel - 2/3 preview (transparent, pass-through mouse events) */}
+      <div className="w-2/3 h-full relative pointer-events-none">
         {/* Hint at bottom */}
-        <div className="absolute bottom-4 right-4 bg-slate-900/60 backdrop-blur-sm px-2 py-1 rounded">
+        <div className="absolute bottom-4 right-4 bg-slate-900/60 backdrop-blur-sm px-2 py-1 rounded pointer-events-auto">
           <p className="text-[9px] text-slate-500">Drag to rotate • Scroll to zoom</p>
         </div>
       </div>
