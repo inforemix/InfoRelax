@@ -1,5 +1,7 @@
 import { Perlin } from '../utils/Perlin';
 
+export type WorldDifficulty = 'peaceful' | 'moderate' | 'challenging' | 'extreme';
+
 export interface Island {
   id: string;
   position: [number, number];
@@ -7,6 +9,27 @@ export interface Island {
   height: number;
   elevation: (x: number, z: number) => number;
   type: 'volcanic' | 'coral' | 'sandy';
+}
+
+export interface Iceberg {
+  id: string;
+  position: [number, number];
+  radius: number;
+  height: number;
+  seed: number;
+}
+
+export interface RaceRoute {
+  id: string;
+  name: string;
+  checkpoints: Array<{
+    id: string;
+    position: [number, number];
+    radius: number;
+    order: number;
+  }>;
+  startPosition: [number, number];
+  endPosition: [number, number];
 }
 
 export interface WindZone {
@@ -36,16 +59,33 @@ export interface Marina {
 
 export interface WorldData {
   seed: number;
+  difficulty: WorldDifficulty;
   bounds: { min: [number, number]; max: [number, number] };
   islands: Island[];
+  icebergs: Iceberg[];
   windZones: WindZone[];
   pois: POI[];
   marina: Marina;
+  races: RaceRoute[];
 }
 
 const perlin = new Perlin(0);
 
-export function generateWorld(seed: number, worldSize: number = 10000): WorldData {
+// Difficulty settings for iceberg generation
+const DIFFICULTY_SETTINGS: Record<WorldDifficulty, {
+  icebergCount: number;
+  minRadius: number;
+  maxRadius: number;
+  minHeight: number;
+  maxHeight: number;
+}> = {
+  peaceful: { icebergCount: 5, minRadius: 10, maxRadius: 25, minHeight: 8, maxHeight: 20 },
+  moderate: { icebergCount: 15, minRadius: 15, maxRadius: 35, minHeight: 12, maxHeight: 30 },
+  challenging: { icebergCount: 30, minRadius: 20, maxRadius: 45, minHeight: 15, maxHeight: 40 },
+  extreme: { icebergCount: 50, minRadius: 25, maxRadius: 55, minHeight: 20, maxHeight: 50 },
+};
+
+export function generateWorld(seed: number, worldSize: number = 10000, difficulty: WorldDifficulty = 'moderate'): WorldData {
   perlin.reseed(seed);
 
   const bounds: WorldData['bounds'] = {
@@ -54,17 +94,22 @@ export function generateWorld(seed: number, worldSize: number = 10000): WorldDat
   };
 
   const islands = generateIslands(seed, bounds);
+  const icebergs = generateIcebergs(seed, bounds, difficulty, islands);
   const windZones = generateWindZones(seed, bounds);
   const pois = generatePOIs(seed, bounds, islands);
   const marina = generateMarina(bounds);
+  const races = generateRaces(seed, bounds, islands, icebergs);
 
   return {
     seed,
+    difficulty,
     bounds,
     islands,
+    icebergs,
     windZones,
     pois,
     marina,
+    races,
   };
 }
 
@@ -240,4 +285,183 @@ export function getWindZoneAtPosition(zones: WindZone[], x: number, z: number): 
 
 export function getDiscoveredPOIs(pois: POI[], discoveredIds: Set<string>): POI[] {
   return pois.filter((poi) => discoveredIds.has(poi.id));
+}
+
+function generateIcebergs(
+  seed: number,
+  bounds: WorldData['bounds'],
+  difficulty: WorldDifficulty,
+  islands: Island[]
+): Iceberg[] {
+  const icebergs: Iceberg[] = [];
+  const settings = DIFFICULTY_SETTINGS[difficulty];
+
+  for (let i = 0; i < settings.icebergCount; i++) {
+    // Distribute icebergs across the world using golden angle for better distribution
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    const angle = i * goldenAngle;
+    const normalizedRadius = Math.sqrt((i + 0.5) / settings.icebergCount);
+    const worldRadius = Math.min(bounds.max[0], bounds.max[1]) * 0.85;
+
+    let x = Math.cos(angle) * normalizedRadius * worldRadius;
+    let z = Math.sin(angle) * normalizedRadius * worldRadius;
+
+    // Add randomness using Perlin noise
+    x += perlin.noise(seed + i * 100, 100) * 500;
+    z += perlin.noise(seed + i * 101, 101) * 500;
+
+    // Clamp to bounds
+    x = Math.max(bounds.min[0] + 200, Math.min(bounds.max[0] - 200, x));
+    z = Math.max(bounds.min[1] + 200, Math.min(bounds.max[1] - 200, z));
+
+    // Skip if too close to marina (spawn area)
+    const distToMarina = Math.sqrt(x * x + z * z);
+    if (distToMarina < 600) continue;
+
+    // Skip if too close to any island
+    let tooCloseToIsland = false;
+    for (const island of islands) {
+      const dx = x - island.position[0];
+      const dz = z - island.position[1];
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < island.radius + 100) {
+        tooCloseToIsland = true;
+        break;
+      }
+    }
+    if (tooCloseToIsland) continue;
+
+    // Generate iceberg properties
+    const radius = settings.minRadius + perlin.noise(seed + i * 102, 102) * (settings.maxRadius - settings.minRadius);
+    const height = settings.minHeight + perlin.noise(seed + i * 103, 103) * (settings.maxHeight - settings.minHeight);
+
+    icebergs.push({
+      id: `iceberg-${i}`,
+      position: [x, z],
+      radius,
+      height,
+      seed: seed + i * 1000,
+    });
+  }
+
+  return icebergs;
+}
+
+function generateRaces(
+  seed: number,
+  bounds: WorldData['bounds'],
+  islands: Island[],
+  _icebergs: Iceberg[]
+): RaceRoute[] {
+  const races: RaceRoute[] = [];
+
+  // Generate 3 procedural A-to-B races
+  for (let raceIndex = 0; raceIndex < 3; raceIndex++) {
+    const raceNames = ['Coastal Sprint', 'Island Run', 'Open Water Challenge'];
+    const checkpointCounts = [4, 6, 8];
+    const checkpointCount = checkpointCounts[raceIndex];
+
+    // Generate start point (away from marina but not too far)
+    const startAngle = perlin.noise(seed + raceIndex * 200, 200) * Math.PI * 2;
+    const startDist = 800 + perlin.noise(seed + raceIndex * 201, 201) * 400;
+    const startX = Math.cos(startAngle) * startDist;
+    const startZ = Math.sin(startAngle) * startDist;
+
+    // Generate end point (opposite side of world from start)
+    const endAngle = startAngle + Math.PI + (perlin.noise(seed + raceIndex * 202, 202) - 0.5) * 0.8;
+    const endDist = 2500 + perlin.noise(seed + raceIndex * 203, 203) * 1500;
+    const endX = Math.cos(endAngle) * endDist;
+    const endZ = Math.sin(endAngle) * endDist;
+
+    // Generate intermediate checkpoints
+    const checkpoints: RaceRoute['checkpoints'] = [];
+
+    for (let cpIndex = 0; cpIndex < checkpointCount; cpIndex++) {
+      const t = (cpIndex + 1) / (checkpointCount + 1); // Progress from start to end
+
+      // Interpolate between start and end with some variation
+      let cpX = startX + (endX - startX) * t;
+      let cpZ = startZ + (endZ - startZ) * t;
+
+      // Add perpendicular variation for interesting routes
+      const perpX = -(endZ - startZ);
+      const perpZ = endX - startX;
+      const perpLen = Math.sqrt(perpX * perpX + perpZ * perpZ);
+      const variation = (perlin.noise(seed + raceIndex * 300 + cpIndex, 300 + cpIndex) - 0.5) * 800;
+
+      cpX += (perpX / perpLen) * variation;
+      cpZ += (perpZ / perpLen) * variation;
+
+      // Clamp to bounds
+      cpX = Math.max(bounds.min[0] + 300, Math.min(bounds.max[0] - 300, cpX));
+      cpZ = Math.max(bounds.min[1] + 300, Math.min(bounds.max[1] - 300, cpZ));
+
+      // Avoid placing checkpoints inside islands
+      for (const island of islands) {
+        const dx = cpX - island.position[0];
+        const dz = cpZ - island.position[1];
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < island.radius + 150) {
+          // Push checkpoint outside island
+          const pushDir = dist > 0 ? 1 : 1;
+          cpX = island.position[0] + (dx / dist) * (island.radius + 200) * pushDir;
+          cpZ = island.position[1] + (dz / dist) * (island.radius + 200) * pushDir;
+        }
+      }
+
+      checkpoints.push({
+        id: `race-${raceIndex}-cp-${cpIndex}`,
+        position: [cpX, cpZ],
+        radius: 200 + cpIndex * 20, // Larger checkpoints for harder races
+        order: cpIndex + 1,
+      });
+    }
+
+    races.push({
+      id: `race-${raceIndex}`,
+      name: raceNames[raceIndex],
+      checkpoints,
+      startPosition: [startX, startZ],
+      endPosition: [endX, endZ],
+    });
+  }
+
+  return races;
+}
+
+export function getIcebergsInRange(icebergs: Iceberg[], x: number, z: number, range: number): Iceberg[] {
+  return icebergs.filter((iceberg) => {
+    const dx = x - iceberg.position[0];
+    const dz = z - iceberg.position[1];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    return dist <= range + iceberg.radius;
+  });
+}
+
+export function checkIcebergCollision(
+  icebergs: Iceberg[],
+  x: number,
+  z: number,
+  boatRadius: number = 8
+): { collided: boolean; iceberg: Iceberg | null; penetration: number; normal: [number, number] } {
+  for (const iceberg of icebergs) {
+    const dx = x - iceberg.position[0];
+    const dz = z - iceberg.position[1];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const collisionDist = iceberg.radius + boatRadius;
+
+    if (dist < collisionDist) {
+      const penetration = collisionDist - dist;
+      const normalX = dist > 0 ? dx / dist : 1;
+      const normalZ = dist > 0 ? dz / dist : 0;
+      return {
+        collided: true,
+        iceberg,
+        penetration,
+        normal: [normalX, normalZ],
+      };
+    }
+  }
+
+  return { collided: false, iceberg: null, penetration: 0, normal: [0, 0] };
 }
