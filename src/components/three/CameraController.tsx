@@ -79,6 +79,13 @@ export function CameraController() {
     }
   }, [keys.cameraPreset3])
 
+  // Handle 4 key for default camera (like game start)
+  useEffect(() => {
+    if (keys.cameraPreset4) {
+      cameraPreset.current = 4
+    }
+  }, [keys.cameraPreset4])
+
   useFrame(() => {
     if (!controlsRef.current) return
 
@@ -93,18 +100,18 @@ export function CameraController() {
       lastGameMode.current = gameMode
       if (gameMode === 'build') {
         // Position camera for build mode preview (1/3 editor, 2/3 preview)
-        // Camera positioned to place yacht on the right side of the preview area
-        // Offset camera to the left so yacht appears on the right
+        // Camera positioned to center yacht in the right 2/3 of the screen
+        // This means offsetting the target to the right by ~16% of viewport width
         const buildCameraPos = new THREE.Vector3(
-          yachtPos.x - 12,  // Offset left to push yacht right in view
-          yachtPos.y + 12,
-          yachtPos.z + 20
+          yachtPos.x + 8,   // Offset right to center yacht in 2/3 preview area
+          yachtPos.y + 10,  // Elevated for good overview
+          yachtPos.z + 18   // Distance for full yacht visibility
         )
         camera.position.copy(buildCameraPos)
-        // Target slightly to the right to center yacht in right portion of screen
+        // Target centered on yacht (orbit controls will let user rotate around this)
         const buildTarget = new THREE.Vector3(
-          yachtPos.x + 5,
-          yachtPos.y + 2,
+          yachtPos.x,
+          yachtPos.y + 1,
           yachtPos.z
         )
         controlsRef.current.target.copy(buildTarget)
@@ -112,13 +119,11 @@ export function CameraController() {
       }
     }
 
-    // Build mode: camera targets yacht, user can orbit
+    // Build mode: camera orbits around yacht, user has full control
     if (gameMode === 'build') {
       controlsRef.current.enabled = true
-      // Smoothly follow yacht position only when not interacting
-      if (!isInteracting.current) {
-        controlsRef.current.target.lerp(yachtPos, 0.1)
-      }
+      // In build mode, keep target fixed on yacht center for stable rotation
+      // Only update target once when entering build mode (handled above)
       return
     }
 
@@ -198,6 +203,14 @@ export function CameraController() {
               yachtPos.x,
               yachtPos.y + 45,
               yachtPos.z - 8 // Slightly behind for better view
+            )
+            break
+
+          case 4: // Default view (like game start - behind and above)
+            presetPos = new THREE.Vector3(
+              yachtPos.x - Math.sin(player.rotation) * 25,
+              yachtPos.y + 12,
+              yachtPos.z - Math.cos(player.rotation) * 25
             )
             break
 
