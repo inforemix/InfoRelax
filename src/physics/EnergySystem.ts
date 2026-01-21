@@ -10,23 +10,77 @@ export const AIR_DENSITY = 1.225 // kg/m³ at sea level
 export const SOLAR_CONSTANT = 1361 // W/m² at Earth's surface (max)
 export const SOLAR_PANEL_EFFICIENCY = 0.22 // Modern panels ~22%
 
+/**
+ * Calculate sun position based on time of day (24-hour cycle)
+ * Returns azimuth (compass direction) and elevation (angle above horizon)
+ */
+export interface SunPosition {
+  azimuth: number      // 0-360 degrees (0 = North, 90 = East, 180 = South, 270 = West)
+  elevation: number    // -90 to +90 degrees (negative = below horizon)
+  solarTime: string    // Human-readable time (e.g., "06:00", "12:00", "18:00")
+  isDay: boolean       // True if sun is above horizon
+}
+
+export function calculateSunPosition(timeOfDay: number): SunPosition {
+  // timeOfDay: 0 = midnight, 0.5 = noon, 1 = midnight
+  // Convert to hours (0-24)
+  const hour = timeOfDay * 24
+
+  // Solar time string
+  const hours = Math.floor(hour)
+  const minutes = Math.floor((hour - hours) * 60)
+  const solarTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+
+  // Calculate elevation angle (simplified)
+  // Peak at solar noon (12:00), negative at night
+  const hourAngle = ((hour - 12) / 12) * Math.PI // -π to +π
+
+  // Elevation: 0° at sunrise/sunset, 65° at solar noon (assuming mid-latitudes)
+  const maxElevation = 65 // degrees (varies by latitude and season)
+  const elevation = Math.sin(hourAngle + Math.PI / 2) * maxElevation - maxElevation / 4
+
+  // Azimuth: sun rises in east (90°), peaks south (180°), sets west (270°)
+  // Simplified path: East → South → West
+  let azimuth: number
+  if (hour >= 6 && hour <= 18) {
+    // Day time: move from East (90°) through South (180°) to West (270°)
+    const dayProgress = (hour - 6) / 12 // 0 at sunrise, 1 at sunset
+    azimuth = 90 + dayProgress * 180
+  } else {
+    // Night time: move from West (270°) through North (0°/360°) to East (90°)
+    const nightHour = hour < 6 ? hour + 24 : hour
+    const nightProgress = (nightHour - 18) / 12
+    azimuth = (270 + nightProgress * 180) % 360
+  }
+
+  const isDay = elevation > 0
+
+  return {
+    azimuth,
+    elevation,
+    solarTime,
+    isDay
+  }
+}
+
 // Time of day solar multiplier (accounts for atmosphere and angle)
 export function getSolarMultiplier(timeOfDay: number): number {
-  // timeOfDay: 0 = midnight, 0.5 = noon, 1 = midnight
-  // Convert to angle (0 at midnight, π at noon)
-  const angle = timeOfDay * 2 * Math.PI
-
-  // Sun elevation: negative at night, positive during day
-  const elevation = Math.sin(angle - Math.PI / 2)
+  const sunPos = calculateSunPosition(timeOfDay)
 
   // No solar at night
-  if (elevation <= 0) return 0
+  if (sunPos.elevation <= 0) return 0
+
+  // Convert elevation to radians
+  const elevationRad = (sunPos.elevation * Math.PI) / 180
 
   // Atmospheric attenuation (more atmosphere to pass through at low angles)
-  const atmosphericPath = 1 / Math.max(elevation, 0.1)
+  const atmosphericPath = 1 / Math.max(Math.sin(elevationRad), 0.1)
   const attenuation = Math.exp(-0.1 * (atmosphericPath - 1))
 
-  return elevation * attenuation
+  // Solar intensity based on elevation
+  const elevationFactor = Math.sin(elevationRad)
+
+  return elevationFactor * attenuation
 }
 
 // Cloud cover effect on solar

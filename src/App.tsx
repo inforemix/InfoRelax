@@ -19,6 +19,7 @@ import { LoadingScreen } from './components/ui/LoadingScreen'
 import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 import { LandingPage } from './components/ui/LandingPage'
 import { WorldMap } from './components/ui/WorldMap'
+import { EnvironmentControls } from './components/ui/EnvironmentControls'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
@@ -152,6 +153,9 @@ export default function App() {
 
         {/* World Map */}
         {gameMode === 'sail' && <WorldMap />}
+
+        {/* Environment Controls (Wind & Waves) */}
+        {gameMode === 'sail' && <EnvironmentControls />}
       </Suspense>
     </div>
   )

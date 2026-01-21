@@ -105,12 +105,12 @@ function ButtonGroup<T extends string>({
   )
 }
 
-type EditorPanel = 'turbine' | 'hull'
+type EditorPanel = 'turbine' | 'hull' | 'energy'
 type EditorMode = 'simple' | 'advanced'
 
 export function BuildMode() {
-  const { currentYacht, setHull, setTurbine, setBladeProfile, stats } = useYachtStore()
-  const { hull, turbine } = currentYacht
+  const { currentYacht, setHull, setTurbine, setBladeProfile, setSolar, setBattery, stats } = useYachtStore()
+  const { hull, turbine, solar, battery } = currentYacht
   const [activePanel, setActivePanel] = useState<EditorPanel>('turbine')
   const [editorMode, setEditorMode] = useState<EditorMode>('simple')
 
@@ -183,7 +183,7 @@ export function BuildMode() {
       <div className="w-1/3 h-full bg-slate-900/95 backdrop-blur-md flex flex-col overflow-hidden">
         {/* Panel Tabs */}
         <div className="flex border-b border-slate-800">
-          {(['turbine', 'hull'] as EditorPanel[]).map((panel) => (
+          {(['turbine', 'hull', 'energy'] as EditorPanel[]).map((panel) => (
             <button
               key={panel}
               onClick={() => setActivePanel(panel)}
@@ -576,6 +576,123 @@ export function BuildMode() {
                   </div>
                 </div>
               </div>
+            </>
+          )}
+
+          {/* ENERGY PANEL */}
+          {activePanel === 'energy' && (
+            <>
+              <Section title="Solar Panels">
+                <Slider
+                  label="Deck Coverage"
+                  value={solar.deckCoverage}
+                  min={0}
+                  max={100}
+                  step={5}
+                  unit="%"
+                  onChange={(v) => setSolar({ deckCoverage: v })}
+                />
+
+                <div className="mt-2 mb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={solar.turbineIntegrated}
+                      onChange={(e) => setSolar({ turbineIntegrated: e.target.checked })}
+                      className="w-3 h-3 accent-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-400">Turbine-Integrated Panels (+2m²)</span>
+                  </label>
+                </div>
+
+                <div className="mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={solar.canopyEnabled}
+                      onChange={(e) => setSolar({ canopyEnabled: e.target.checked })}
+                      className="w-3 h-3 accent-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-400">Solar Canopy (adds shade & power)</span>
+                  </label>
+                </div>
+
+                {/* Solar Stats */}
+                <div className="mt-3 p-2 bg-slate-800/50 rounded">
+                  <div className="text-[9px] text-slate-400 mb-1">Solar Specs</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-yellow-400">
+                        {((hull.length * hull.beam * 0.6 * solar.deckCoverage / 100) + (solar.turbineIntegrated ? 2 : 0)).toFixed(1)}m²
+                      </div>
+                      <div className="text-[8px] text-slate-500">Panel Area</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-green-400">{stats.solarOutput.toFixed(2)} kW</div>
+                      <div className="text-[8px] text-slate-500">Peak Output</div>
+                    </div>
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="Battery System">
+                <div className="mb-2">
+                  <span className="text-[10px] text-slate-500 mb-1 block">Capacity</span>
+                  <ButtonGroup
+                    options={[
+                      { value: '50', label: '50 kWh' },
+                      { value: '100', label: '100 kWh' },
+                      { value: '200', label: '200 kWh' },
+                      { value: '500', label: '500 kWh' },
+                    ]}
+                    value={battery.capacity.toString()}
+                    onChange={(v) => setBattery({ capacity: parseInt(v) })}
+                  />
+                </div>
+
+                <Slider
+                  label="Initial Charge"
+                  value={battery.currentCharge}
+                  min={0}
+                  max={100}
+                  step={5}
+                  unit="%"
+                  onChange={(v) => setBattery({ currentCharge: v })}
+                />
+
+                {/* Battery Stats */}
+                <div className="mt-3 p-2 bg-slate-800/50 rounded">
+                  <div className="text-[9px] text-slate-400 mb-1">Battery Specs</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-blue-400">{battery.capacity} kWh</div>
+                      <div className="text-[8px] text-slate-500">Capacity</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-purple-400">
+                        {(battery.capacity * battery.currentCharge / 100).toFixed(1)} kWh
+                      </div>
+                      <div className="text-[8px] text-slate-500">Current Charge</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-1">
+                    <div>
+                      <div className="text-[10px] font-bold text-green-400">{stats.range.toFixed(0)} km</div>
+                      <div className="text-[8px] text-slate-500">Estimated Range</div>
+                    </div>
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="Energy System Info" defaultOpen={false}>
+                <div className="text-[9px] text-slate-400 space-y-1">
+                  <p>⚡ Energy credits (EC) are earned by harvesting wind and solar power</p>
+                  <p>☀️ Solar output varies with time of day and weather</p>
+                  <p>🔋 Battery stores excess energy for use when generation is low</p>
+                  <p>🌊 Motor consumes battery power based on throttle and speed</p>
+                  <p>💰 1 EC = 1 kWh of energy harvested</p>
+                </div>
+              </Section>
             </>
           )}
         </div>
