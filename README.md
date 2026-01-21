@@ -135,25 +135,25 @@ Based on concept art featuring futuristic sustainable yachts:
 
 ## 🎯 MVP Scope (12 Weeks)
 
-### P0 - Must Have
-- [ ] Hull editor with parametric sliders
-- [ ] Kaleidoscope blade editor (freehand + presets)
-- [ ] Sailing with wind response
-- [ ] Energy system (turbine + solar + battery)
-- [ ] Power flow HUD
-- [ ] Save/load yacht designs
+### P0 - Must Have ✅ COMPLETE
+- [x] Hull editor with parametric sliders
+- [x] Kaleidoscope blade editor (freehand + presets)
+- [x] Sailing with wind response
+- [x] Energy system (turbine + solar + battery)
+- [x] Power flow HUD
+- [x] Save/load yacht designs
 
-### P1 - Should Have
-- [ ] See other players in world
-- [ ] Racing with checkpoints
-- [ ] Energy credit progression
-- [ ] Weather zones
+### P1 - Should Have 🟡 IN PROGRESS
+- [ ] See other players in world (Colyseus setup pending)
+- [x] Racing with checkpoints
+- [x] Energy credit progression
+- [x] Weather zones (4 presets: clear, overcast, storm, arctic)
 
-### P2 - Nice to Have
-- [ ] Kite sail
-- [ ] DJ booth module
-- [ ] Island discoveries
-- [ ] Leaderboards
+### P2 - Nice to Have 🟡 PARTIAL
+- [ ] Kite sail (designed, not implemented)
+- [ ] DJ booth module (designed, not implemented)
+- [x] Island discoveries (procedurally generated POIs)
+- [ ] Leaderboards (requires multiplayer backend)
 
 ### Out of Scope (MVP)
 - Interior customization
