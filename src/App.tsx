@@ -20,6 +20,7 @@ import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 import { LandingPage } from './components/ui/LandingPage'
 import { WorldMap } from './components/ui/WorldMap'
 import { EnvironmentControls } from './components/ui/EnvironmentControls'
+import { EngineControls } from './components/ui/EngineControls'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
@@ -57,7 +58,7 @@ export default function App() {
       {/* 3D Canvas */}
       <Canvas
         shadows
-        camera={{ position: [20, 10, 20], fov: 50 }}
+        camera={{ position: [20, 10, 20], fov: 50, near: 0.1, far: 20000 }}
         gl={{ antialias: true, alpha: false }}
       >
         <Suspense fallback={null}>
@@ -112,6 +113,15 @@ export default function App() {
 
         {/* Mode Toggle - Center top */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
+          {/* Exit button as icon */}
+          <button
+            onClick={() => useLandingStore.getState().resetToLanding()}
+            className="px-3 py-2 rounded-lg bg-slate-800/90 text-slate-300 hover:bg-slate-700 font-medium transition-all"
+            title="Return to map selection"
+          >
+            ←
+          </button>
+
           <button
             onClick={() => setGameMode('sail')}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
@@ -134,15 +144,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Back to Landing - Top Right */}
-        <button
-          onClick={() => useLandingStore.getState().resetToLanding()}
-          className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-slate-800/90 text-slate-300 hover:bg-slate-700 font-medium transition-all z-50"
-          title="Return to map selection"
-        >
-          ← Exit
-        </button>
-
         {/* Build Mode UI */}
         {gameMode === 'build' && <BuildMode />}
 
@@ -156,6 +157,9 @@ export default function App() {
 
         {/* Environment Controls (Wind & Waves) */}
         {gameMode === 'sail' && <EnvironmentControls />}
+
+        {/* Engine Controls (Thrust & Throttle) */}
+        {gameMode === 'sail' && <EngineControls />}
       </Suspense>
     </div>
   )

@@ -53,10 +53,19 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     })
 
     waterObj.rotation.x = -Math.PI / 2
-    waterObj.position.y = 0
+    waterObj.position.y = -0.1 // Slightly below sea level to prevent z-fighting
+
+    // Set render order to ensure ocean renders first
+    waterObj.renderOrder = -1
+
+    // Ensure proper depth settings
+    if (waterObj.material) {
+      waterObj.material.depthWrite = true
+      waterObj.material.depthTest = true
+    }
 
     return waterObj
-  }, [waterGeometry, waterNormals, scene.fog])
+  }, [waterGeometry, waterNormals, scene.fog, sunColor, waterColor, distortionScale])
 
   // Update water parameters when controls change
   useEffect(() => {

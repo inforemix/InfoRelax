@@ -28,7 +28,7 @@ export function EnvironmentControls() {
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="absolute bottom-4 left-4 z-10 bg-slate-900/90 border-2 border-cyan-500/50 rounded-lg p-2 hover:bg-slate-800/90 transition-all"
+        className="absolute top-32 left-4 z-10 bg-slate-900/90 border-2 border-cyan-500/50 rounded-lg p-2 hover:bg-slate-800/90 transition-all pointer-events-auto"
         title="Environment Controls"
       >
         <span className="text-cyan-400 text-lg">🌊</span>
@@ -37,7 +37,7 @@ export function EnvironmentControls() {
   }
 
   return (
-    <div className="absolute bottom-4 left-4 z-10 bg-slate-900/95 border-2 border-cyan-500/50 rounded-lg shadow-lg p-4 w-80">
+    <div className="absolute top-32 left-4 z-10 bg-slate-900/95 border-2 border-cyan-500/50 rounded-lg shadow-lg p-4 w-80 pointer-events-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-white font-bold text-sm flex items-center gap-2">
