@@ -165,6 +165,13 @@ export class WindSystemManager {
 
     const preset = WEATHER_PRESETS[this.weather]
 
+    // Safety check: if weather preset doesn't exist, use trade-winds as fallback
+    if (!preset) {
+      console.warn(`Unknown weather type in WindSystem: "${this.weather}". Using 'trade-winds' as fallback.`)
+      this.weather = 'trade-winds'
+      return this.update(deltaTime, boatSpeed, boatHeading) // Retry with fallback
+    }
+
     // Generate smooth variations using noise
     const speedNoise = windNoise.noise1D(this.time * 0.1)
     const directionNoise = windNoise.noise1D(this.time * 0.05 + 100)

@@ -121,6 +121,21 @@ export const useGameStore = create<GameState>()(
     
     setWeather: (weather) => {
       const preset = weatherPresets[weather]
+
+      // Safety check: if weather preset doesn't exist, log warning and use trade-winds as fallback
+      if (!preset) {
+        console.warn(`Unknown weather type: "${weather}". Using 'trade-winds' as fallback.`)
+        const fallbackPreset = weatherPresets['trade-winds']
+        const [minSpeed, maxSpeed] = fallbackPreset.baseSpeed
+
+        set((state) => {
+          state.weather = 'trade-winds'
+          state.wind.speed = minSpeed + Math.random() * (maxSpeed - minSpeed)
+          state.wind.gustFactor = fallbackPreset.gustFactor
+        })
+        return
+      }
+
       const [minSpeed, maxSpeed] = preset.baseSpeed
 
       set((state) => {
