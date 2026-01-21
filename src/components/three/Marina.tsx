@@ -1,12 +1,10 @@
-import { useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useMemo } from 'react'
 import { useWorldStore } from '../../state/useWorldStore'
 import * as THREE from 'three'
 
 export function Marina() {
   const marina = useWorldStore((state) => state.world?.marina)
   const isDocked = useWorldStore((state) => state.isDocked)
-  const lighthouseRef = useRef<THREE.PointLight>(null)
 
   const marinaMeshes = useMemo(() => {
     if (!marina) return { structures: [], lights: [] }
@@ -24,81 +22,11 @@ export function Marina() {
         metalness: 0,
       })
 
-      const concreteMaterial = new THREE.MeshStandardMaterial({
-        color: 0xa0a0a0,
-        roughness: 0.7,
-        metalness: 0.1,
-      })
-
       const metalMaterial = new THREE.MeshStandardMaterial({
         color: 0x707070,
         roughness: 0.4,
         metalness: 0.8,
       })
-
-      const roofMaterial = new THREE.MeshStandardMaterial({
-        color: 0x8b0000,
-        roughness: 0.6,
-        metalness: 0.2,
-      })
-
-      // ===== MAIN HARBOR BUILDING =====
-      // Building base
-      const buildingBase = new THREE.BoxGeometry(60, 25, 40)
-      const buildingMesh = new THREE.Mesh(buildingBase, concreteMaterial)
-      buildingMesh.position.set(centerX, 12.5, centerZ - 100)
-      buildingMesh.castShadow = true
-      buildingMesh.receiveShadow = true
-      structures.push(buildingMesh)
-
-      // Building roof
-      const roofGeo = new THREE.ConeGeometry(35, 15, 4)
-      const roofMesh = new THREE.Mesh(roofGeo, roofMaterial)
-      roofMesh.position.set(centerX, 32, centerZ - 100)
-      roofMesh.rotation.y = Math.PI / 4
-      roofMesh.castShadow = true
-      structures.push(roofMesh)
-
-      // Windows
-      const windowMaterial = new THREE.MeshStandardMaterial({
-        color: 0x6699cc,
-        emissive: 0x4477aa,
-        emissiveIntensity: 0.5,
-        metalness: 0.9,
-        roughness: 0.1,
-      })
-
-      for (let i = 0; i < 3; i++) {
-        const windowGeo = new THREE.BoxGeometry(8, 6, 1)
-        const window1 = new THREE.Mesh(windowGeo, windowMaterial)
-        window1.position.set(centerX - 20 + i * 20, 15, centerZ - 80)
-        structures.push(window1)
-
-        const window2 = new THREE.Mesh(windowGeo, windowMaterial)
-        window2.position.set(centerX - 20 + i * 20, 15, centerZ - 120)
-        structures.push(window2)
-      }
-
-      // ===== LIGHTHOUSE =====
-      // Lighthouse tower
-      const lighthouseTower = new THREE.CylinderGeometry(6, 8, 50, 12)
-      const lighthouseMesh = new THREE.Mesh(lighthouseTower, concreteMaterial)
-      lighthouseMesh.position.set(centerX + 80, 25, centerZ - 80)
-      lighthouseMesh.castShadow = true
-      structures.push(lighthouseMesh)
-
-      // Lighthouse top
-      const lighthouseTop = new THREE.CylinderGeometry(8, 6, 8, 12)
-      const lighthouseTopMesh = new THREE.Mesh(lighthouseTop, metalMaterial)
-      lighthouseTopMesh.position.set(centerX + 80, 54, centerZ - 80)
-      lighthouseTopMesh.castShadow = true
-      structures.push(lighthouseTopMesh)
-
-      // Lighthouse light
-      const lighthouseLight = new THREE.PointLight(0xffff00, 100, 300)
-      lighthouseLight.position.set(centerX + 80, 58, centerZ - 80)
-      lighthouseLight.castShadow = true
-      lights.push(lighthouseLight)
 
       // ===== MAIN DOCK PLATFORM =====
       const mainDockGeo = new THREE.BoxGeometry(150, 3, 80)
@@ -221,37 +149,6 @@ export function Marina() {
         structures.push(mastMesh)
       }
 
-      // ===== FUEL/SUPPLY TANKS =====
-      for (let tank = 0; tank < 2; tank++) {
-        const tankX = centerX + 40
-        const tankZ = centerZ - 100 + tank * 30
-
-        const tankGeo = new THREE.CylinderGeometry(8, 8, 20, 16)
-        const tankMesh = new THREE.Mesh(tankGeo, metalMaterial)
-        tankMesh.position.set(tankX, 10, tankZ)
-        tankMesh.rotation.z = Math.PI / 2
-        tankMesh.castShadow = true
-        structures.push(tankMesh)
-      }
-
-      // ===== STORAGE CONTAINERS =====
-      for (let cont = 0; cont < 4; cont++) {
-        const contX = centerX - 40
-        const contZ = centerZ - 120 + cont * 15
-
-        const containerGeo = new THREE.BoxGeometry(12, 8, 12)
-        const colors = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0x95e1d3]
-        const containerMesh = new THREE.Mesh(containerGeo, new THREE.MeshStandardMaterial({
-          color: colors[cont],
-          roughness: 0.7,
-          metalness: 0.5,
-        }))
-        containerMesh.position.set(contX, 4, contZ)
-        containerMesh.castShadow = true
-        containerMesh.receiveShadow = true
-        structures.push(containerMesh)
-      }
-
       // ===== DOCKING ZONE INDICATOR =====
       const zoneGeometry = new THREE.RingGeometry(
         marina.dockingZoneRadius * 0.95,
@@ -276,25 +173,14 @@ export function Marina() {
     }
   }, [marina, isDocked])
 
-  // Animate lighthouse light
-  useFrame((state) => {
-    if (lighthouseRef.current) {
-      lighthouseRef.current.intensity = 100 + Math.sin(state.clock.elapsedTime * 2) * 50
-    }
-  })
-
   return (
     <>
       {marinaMeshes.structures.map((mesh, i) => (
         <primitive key={`marina-struct-${i}`} object={mesh} />
       ))}
-      {marinaMeshes.lights.map((light, i) => {
-        if (i === 0) {
-          // Lighthouse light (animated)
-          return <primitive key={`marina-light-${i}`} ref={lighthouseRef} object={light} />
-        }
-        return <primitive key={`marina-light-${i}`} object={light} />
-      })}
+      {marinaMeshes.lights.map((light, i) => (
+        <primitive key={`marina-light-${i}`} object={light} />
+      ))}
     </>
   )
 }

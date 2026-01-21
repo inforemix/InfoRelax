@@ -18,6 +18,7 @@ import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 import { LandingPage } from './components/ui/LandingPage'
+import { WorldMap } from './components/ui/WorldMap'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
@@ -148,6 +149,9 @@ export default function App() {
         <RaceMenu />
         <RaceStatus />
         <Leaderboard />
+
+        {/* World Map */}
+        {gameMode === 'sail' && <WorldMap />}
       </Suspense>
     </div>
   )

@@ -100,8 +100,8 @@ export const useGameStore = create<GameState>()(
     energyCredits: 0,
 
     player: {
-      position: [0, 0, 0],
-      rotation: 0,
+      position: [0, 0, 150], // Spawn in front of marina pier
+      rotation: Math.PI, // Face toward the marina
       speed: 0,
       throttle: 0,
       steering: 0,
