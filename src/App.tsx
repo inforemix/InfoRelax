@@ -1,5 +1,4 @@
 import { Canvas } from '@react-three/fiber'
-import { Sky, Stars } from '@react-three/drei'
 import { Suspense, useEffect } from 'react'
 import { Leva } from 'leva'
 
@@ -10,13 +9,20 @@ import { WindIndicator } from './components/three/WindIndicator'
 import { CameraController } from './components/three/CameraController'
 import { Islands } from './components/three/Islands'
 import { Marina } from './components/three/Marina'
+import { EnvironmentDetails } from './components/three/EnvironmentDetails'
 import { PointsOfInterest } from './components/three/PointsOfInterest'
 import { RaceCheckpoints } from './components/three/RaceCheckpoints'
+import { WeatherEffects } from './components/three/WeatherEffects'
+import { DynamicLighting } from './components/three/DynamicLighting'
+import { ProceduralClouds } from './components/three/ProceduralClouds'
+import { EnhancedSky } from './components/three/EnhancedSky'
 import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 import { LandingPage } from './components/ui/LandingPage'
+import { WorldMap } from './components/ui/WorldMap'
+import { EngineControls } from './components/ui/EngineControls'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
@@ -27,7 +33,7 @@ import { useLandingStore } from './state/useLandingStore'
 import { useWorldIntegration } from './hooks/useWorldIntegration'
 
 export default function App() {
-  const { timeOfDay, gameMode, setGameMode } = useGameStore()
+  const { gameMode, setGameMode } = useGameStore()
   const currentRace = useRaceStore((state) => state.currentRace)
   const gameStarted = useLandingStore((state) => state.gameStarted)
 
@@ -54,28 +60,22 @@ export default function App() {
       {/* 3D Canvas */}
       <Canvas
         shadows
-        camera={{ position: [20, 10, 20], fov: 50 }}
+        camera={{ position: [20, 10, 20], fov: 50, near: 0.1, far: 20000 }}
         gl={{ antialias: true, alpha: false }}
       >
         <Suspense fallback={null}>
-          {/* Lighting */}
-          <ambientLight intensity={0.4} />
-          <directionalLight
-            position={[50, 50, 25]}
-            intensity={1.5}
-            castShadow
-            shadow-mapSize={[2048, 2048]}
-          />
+          {/* Dynamic Lighting System */}
+          <DynamicLighting />
 
-          {/* Environment */}
-          <Sky
-            distance={450000}
-            sunPosition={[100, timeOfDay > 0.5 ? 20 : -20, 100]}
-            inclination={0.5}
-            azimuth={0.25}
-          />
-          <Stars radius={100} depth={50} count={5000} factor={4} fade />
-          <fog attach="fog" args={['#87CEEB', 100, 500]} />
+          {/* Weather Visual Effects */}
+          <WeatherEffects />
+
+          {/* Procedural Clouds */}
+          <ProceduralClouds />
+
+          {/* Environment - Enhanced Sky with dynamic sunsets */}
+          <EnhancedSky />
+          <fogExp2 attach="fog" args={['#b0c4de', 0.0008]} />
 
           {/* Ocean */}
           <Ocean />
@@ -83,6 +83,7 @@ export default function App() {
           {/* World */}
           <Islands />
           <Marina />
+          <EnvironmentDetails />
           <PointsOfInterest />
 
           {/* Player Yacht */}
@@ -108,6 +109,15 @@ export default function App() {
 
         {/* Mode Toggle - Center top */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
+          {/* Exit button as icon */}
+          <button
+            onClick={() => useLandingStore.getState().resetToLanding()}
+            className="px-3 py-2 rounded-lg bg-slate-800/90 text-slate-300 hover:bg-slate-700 font-medium transition-all"
+            title="Return to map selection"
+          >
+            ←
+          </button>
+
           <button
             onClick={() => setGameMode('sail')}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
@@ -130,15 +140,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Back to Landing - Top Right */}
-        <button
-          onClick={() => useLandingStore.getState().resetToLanding()}
-          className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-slate-800/90 text-slate-300 hover:bg-slate-700 font-medium transition-all z-50"
-          title="Return to map selection"
-        >
-          ← Exit
-        </button>
-
         {/* Build Mode UI */}
         {gameMode === 'build' && <BuildMode />}
 
@@ -146,6 +147,12 @@ export default function App() {
         <RaceMenu />
         <RaceStatus />
         <Leaderboard />
+
+        {/* World Map */}
+        {gameMode === 'sail' && <WorldMap />}
+
+        {/* Engine Controls (Thrust & Throttle) */}
+        {gameMode === 'sail' && <EngineControls />}
       </Suspense>
     </div>
   )

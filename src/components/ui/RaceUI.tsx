@@ -16,22 +16,8 @@ export function RaceMenu() {
 
   if (showRaceSelect && !isRacing) {
     return (
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          left: 20,
-          background: 'rgba(0, 0, 0, 0.8)',
-          border: '2px solid #0099ff',
-          borderRadius: 8,
-          padding: 15,
-          color: '#0099ff',
-          fontFamily: 'monospace',
-          zIndex: 1000,
-          maxWidth: 300,
-        }}
-      >
-        <h3 style={{ margin: '0 0 10px 0' }}>SELECT RACE</h3>
+      <div className="absolute top-[360px] right-4 z-10 bg-gray-900/90 border-2 border-cyan-500/50 rounded-lg p-4 w-64 pointer-events-auto">
+        <h3 className="text-white font-bold text-sm mb-3">SELECT RACE</h3>
         {races.map((race) => (
           <button
             key={race.id}
@@ -39,38 +25,17 @@ export function RaceMenu() {
               startRace(race, 'Player')
               setShowRaceSelect(false)
             }}
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: 8,
-              marginBottom: 8,
-              background: '#0099ff',
-              color: '#000',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 'bold',
-            }}
+            className="w-full p-2 mb-2 bg-cyan-500 text-black rounded font-bold text-xs hover:bg-cyan-400 transition-colors"
           >
             {race.name}
-            <div style={{ fontSize: 10, marginTop: 3 }}>
+            <div className="text-[10px] mt-1 font-normal">
               {race.laps} Laps • {race.checkpoints.length} Checkpoints
             </div>
           </button>
         ))}
         <button
           onClick={() => setShowRaceSelect(false)}
-          style={{
-            width: '100%',
-            padding: 8,
-            background: '#666',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontSize: 12,
-          }}
+          className="w-full p-2 bg-slate-600 text-white rounded text-xs hover:bg-slate-500 transition-colors"
         >
           Cancel
         </button>
@@ -82,22 +47,10 @@ export function RaceMenu() {
     return (
       <button
         onClick={() => setShowRaceSelect(true)}
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          left: 20,
-          padding: '10px 15px',
-          background: '#0099ff',
-          color: '#000',
-          border: 'none',
-          borderRadius: 4,
-          cursor: 'pointer',
-          fontWeight: 'bold',
-          fontFamily: 'monospace',
-          zIndex: 1000,
-        }}
+        className="absolute top-[360px] right-4 z-10 bg-cyan-500 text-white border-2 border-cyan-500/50 rounded-lg p-3 hover:bg-cyan-400 transition-all font-bold text-sm shadow-lg pointer-events-auto"
+        title="Start Race"
       >
-        START RACE
+        🏁 START RACE
       </button>
     )
   }

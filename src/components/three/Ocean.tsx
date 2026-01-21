@@ -4,6 +4,7 @@ import { useTexture } from '@react-three/drei'
 import { useControls } from 'leva'
 import * as THREE from 'three'
 import { Water } from 'three/addons/objects/Water.js'
+import { useGameStore } from '../../state/useGameStore'
 
 interface OceanProps {
   size?: number
@@ -13,6 +14,7 @@ interface OceanProps {
 export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
   const waterRef = useRef<Water>(null)
   const { scene } = useThree()
+  const { setWind, setWeather, player } = useGameStore()
 
   // Load water normal texture
   const waterNormals = useTexture('/textures/waternormals.jpg', (texture) => {
@@ -34,6 +36,28 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     waveSize: { value: 1.0, min: 0.1, max: 5, step: 0.1, label: 'Wave Size' },
   })
 
+  // Add wind and environment controls to Leva
+  const windControls = useControls('Wind & Environment', {
+    windDirection: { value: 45, min: 0, max: 360, step: 5, label: 'Wind Direction (°)' },
+    windSpeed: { value: 10, min: 0, max: 25, step: 0.5, label: 'Wind Speed (m/s)' },
+    gustFactor: { value: 0.15, min: 0, max: 1, step: 0.05, label: 'Gust Factor' },
+    weather: {
+      value: 'trade-winds',
+      options: ['clear', 'cloudy', 'trade-winds', 'storm', 'doldrums'],
+      label: 'Weather'
+    },
+  })
+
+  // Sync wind controls to game state
+  useEffect(() => {
+    setWind({
+      direction: windControls.windDirection,
+      speed: windControls.windSpeed,
+      gustFactor: windControls.gustFactor,
+    })
+    setWeather(windControls.weather as any)
+  }, [windControls.windDirection, windControls.windSpeed, windControls.gustFactor, windControls.weather, setWind, setWeather])
+
   // Create water geometry
   const waterGeometry = useMemo(() => {
     return new THREE.PlaneGeometry(size, size, segments, segments)
@@ -53,10 +77,18 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     })
 
     waterObj.rotation.x = -Math.PI / 2
-    waterObj.position.y = 0
+    waterObj.position.y = -0.5 // Slightly below sea level to prevent z-fighting
+
+    // Fix rendering order and depth to prevent black clipping
+    if (waterObj.material) {
+      const mat = waterObj.material as THREE.ShaderMaterial
+      mat.depthWrite = true
+      mat.depthTest = true
+      mat.side = THREE.FrontSide
+    }
 
     return waterObj
-  }, [waterGeometry, waterNormals, scene.fog])
+  }, [waterGeometry, waterNormals, scene.fog, sunColor, waterColor, distortionScale])
 
   // Update water parameters when controls change
   useEffect(() => {
@@ -79,13 +111,18 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     }
   }, [water, waterColor, sunColor, distortionScale, waveSize])
 
-  // Animate the water
+  // Animate the water and follow player for infinite ocean effect
   useFrame((_, delta) => {
     if (water && water.material) {
       const uniforms = (water.material as THREE.ShaderMaterial).uniforms
       if (uniforms && uniforms.time) {
         uniforms.time.value += delta * waveSpeed
       }
+
+      // Make ocean follow player position (infinite ocean effect)
+      // Only update X and Z, keep Y at 0 (sea level)
+      water.position.x = player.position[0]
+      water.position.z = player.position[2]
     }
   })
 

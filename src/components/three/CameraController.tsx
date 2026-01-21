@@ -17,6 +17,31 @@ export function CameraController() {
   // Track if we need to reset camera
   const shouldReset = useRef(false)
   const lastGameMode = useRef(gameMode)
+  const isInteracting = useRef(false)
+  const cameraPreset = useRef<number>(0) // 0=default, 1=close-up, 2=side, 3=bird's eye
+
+  // Track user interaction with controls
+  useEffect(() => {
+    if (!controlsRef.current) return
+
+    const controls = controlsRef.current
+
+    const handleStart = () => {
+      isInteracting.current = true
+    }
+
+    const handleEnd = () => {
+      isInteracting.current = false
+    }
+
+    controls.addEventListener('start', handleStart)
+    controls.addEventListener('end', handleEnd)
+
+    return () => {
+      controls.removeEventListener('start', handleStart)
+      controls.removeEventListener('end', handleEnd)
+    }
+  }, [])
 
   // Handle V key for camera mode toggle
   useEffect(() => {
@@ -29,8 +54,30 @@ export function CameraController() {
   useEffect(() => {
     if (keys.resetCamera) {
       shouldReset.current = true
+      cameraPreset.current = 0 // Reset to default
     }
   }, [keys.resetCamera])
+
+  // Handle 1 key for close-up camera
+  useEffect(() => {
+    if (keys.cameraPreset1) {
+      cameraPreset.current = 1
+    }
+  }, [keys.cameraPreset1])
+
+  // Handle 2 key for side camera
+  useEffect(() => {
+    if (keys.cameraPreset2) {
+      cameraPreset.current = 2
+    }
+  }, [keys.cameraPreset2])
+
+  // Handle 3 key for bird's eye camera
+  useEffect(() => {
+    if (keys.cameraPreset3) {
+      cameraPreset.current = 3
+    }
+  }, [keys.cameraPreset3])
 
   useFrame(() => {
     if (!controlsRef.current) return
@@ -68,8 +115,10 @@ export function CameraController() {
     // Build mode: camera targets yacht, user can orbit
     if (gameMode === 'build') {
       controlsRef.current.enabled = true
-      // Smoothly follow yacht position (in case it's moving)
-      controlsRef.current.target.lerp(yachtPos, 0.1)
+      // Smoothly follow yacht position only when not interacting
+      if (!isInteracting.current) {
+        controlsRef.current.target.lerp(yachtPos, 0.1)
+      }
       return
     }
 
@@ -99,8 +148,11 @@ export function CameraController() {
       // Third-person: enable orbit controls, target follows yacht
       controlsRef.current.enabled = true
 
-      // Update orbit target to follow yacht
-      controlsRef.current.target.lerp(yachtPos, 0.1)
+      // Update orbit target to follow yacht only when not interacting
+      // This preserves the focal point during zoom/pan/rotate
+      if (!isInteracting.current) {
+        controlsRef.current.target.lerp(yachtPos, 0.1)
+      }
 
       // Reset camera to default back view position (N key)
       if (shouldReset.current) {
@@ -118,6 +170,46 @@ export function CameraController() {
         camera.position.copy(defaultPos)
         controlsRef.current.target.copy(yachtPos)
         controlsRef.current.update()
+      }
+
+      // Apply camera presets (1, 2, 3 keys)
+      if (cameraPreset.current > 0 && !isInteracting.current) {
+        let presetPos: THREE.Vector3
+
+        switch (cameraPreset.current) {
+          case 1: // Close-up view (behind and closer)
+            presetPos = new THREE.Vector3(
+              yachtPos.x - Math.sin(player.rotation) * 12,
+              yachtPos.y + 6,
+              yachtPos.z - Math.cos(player.rotation) * 12
+            )
+            break
+
+          case 2: // Side view (perpendicular to yacht)
+            presetPos = new THREE.Vector3(
+              yachtPos.x + Math.cos(player.rotation) * 18,
+              yachtPos.y + 8,
+              yachtPos.z - Math.sin(player.rotation) * 18
+            )
+            break
+
+          case 3: // Bird's eye view (top-down)
+            presetPos = new THREE.Vector3(
+              yachtPos.x,
+              yachtPos.y + 45,
+              yachtPos.z - 8 // Slightly behind for better view
+            )
+            break
+
+          default:
+            presetPos = camera.position.clone()
+        }
+
+        // Smoothly transition to preset position
+        camera.position.lerp(presetPos, 0.05)
+
+        // Update target to yacht center
+        controlsRef.current.target.lerp(yachtPos, 0.1)
       }
     }
   })

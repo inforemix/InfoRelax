@@ -119,13 +119,13 @@ const defaultYacht: YachtConfig = {
     bowShape: 'piercing',
   },
   turbine: {
-    style: 'helix',
-    height: 8,
-    diameter: 2,
-    bladeCount: 3,
+    style: 'ribbon',
+    height: 7,
+    diameter: 4,
+    bladeCount: 5,
     bladeProfile: [],
     material: 'solar',
-    twist: 45,
+    twist: 25,
     taper: 0.8,
     sweep: 0,
     thickness: 0.08,
@@ -208,10 +208,10 @@ function calculateStats(yacht: YachtConfig): YachtStats {
     foilTakeoffSpeed = foilTakeoffMs * 1.944 // Convert to knots
   }
 
-  // Max speed based on drag and available power
+  // Max speed based on drag and available power (300% boost)
   // Simplified: lower drag = higher speed potential
   const dragCoefficient = dragResult.totalDrag / (0.5 * WATER_DENSITY * testSpeed * testSpeed * hull.beam * hull.draft)
-  const maxSpeed = Math.min(30, hullSpeed * (1.5 - dragCoefficient)) * (hull.type === 'hydrofoil' ? 1.8 : 1)
+  const maxSpeed = Math.min(120, hullSpeed * (1.5 - dragCoefficient)) * (hull.type === 'hydrofoil' ? 1.8 : 1) * 4 // 4x power = 4x speed potential
 
   // Stability score (0-100)
   const stability = stabilityResult.stabilityIndex

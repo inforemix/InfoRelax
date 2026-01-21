@@ -50,33 +50,6 @@ export const MAP_PRESETS: Record<string, MapPreset> = {
     difficulty: 'challenging',
     features: ['Storm paths', 'Fast winds', 'Scattered islands', 'High rewards'],
   },
-  'open-ocean': {
-    id: 'open-ocean',
-    name: 'Open Ocean Expanse',
-    description: 'Vast world with few islands - true open water sailing',
-    seed: 789,
-    worldSize: 15000,
-    difficulty: 'extreme',
-    features: ['Extreme distances', 'Rare islands', 'Marathon races', 'Epic exploration'],
-  },
-  'island-paradise': {
-    id: 'island-paradise',
-    name: 'Island Paradise',
-    description: 'Dense island clusters with many POIs to discover',
-    seed: 101112,
-    worldSize: 9000,
-    difficulty: 'moderate',
-    features: ['Many islands', 'Abundant POIs', 'Exploration', 'Varied terrain'],
-  },
-  'wind-laboratory': {
-    id: 'wind-laboratory',
-    name: 'Wind Laboratory',
-    description: 'Extreme weather testing - perfect for racing challenges',
-    seed: 131415,
-    worldSize: 11000,
-    difficulty: 'extreme',
-    features: ['Extreme winds', '4+ races', 'Tight checkpoints', 'Speed focus'],
-  },
 }
 
 export const useLandingStore = create<LandingState>((set) => ({

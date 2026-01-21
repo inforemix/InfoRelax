@@ -100,8 +100,8 @@ export const useGameStore = create<GameState>()(
     energyCredits: 0,
 
     player: {
-      position: [0, 0, 0],
-      rotation: 0,
+      position: [0, 0, 150], // Spawn in front of marina pier
+      rotation: 0, // Face away from the marina (180° rotated from previous)
       speed: 0,
       throttle: 0,
       steering: 0,
@@ -121,6 +121,21 @@ export const useGameStore = create<GameState>()(
     
     setWeather: (weather) => {
       const preset = weatherPresets[weather]
+
+      // Safety check: if weather preset doesn't exist, log warning and use trade-winds as fallback
+      if (!preset) {
+        console.warn(`Unknown weather type: "${weather}". Using 'trade-winds' as fallback.`)
+        const fallbackPreset = weatherPresets['trade-winds']
+        const [minSpeed, maxSpeed] = fallbackPreset.baseSpeed
+
+        set((state) => {
+          state.weather = 'trade-winds'
+          state.wind.speed = minSpeed + Math.random() * (maxSpeed - minSpeed)
+          state.wind.gustFactor = fallbackPreset.gustFactor
+        })
+        return
+      }
+
       const [minSpeed, maxSpeed] = preset.baseSpeed
 
       set((state) => {
@@ -196,8 +211,22 @@ export const useGameStore = create<GameState>()(
 
         // Calculate current speed based on throttle (knots to m/s: 1 knot ≈ 0.514 m/s)
         const targetSpeed = (player.throttle / 100) * maxSpeed
-        // Gradually accelerate/decelerate
-        player.speed = player.speed + (targetSpeed - player.speed) * Math.min(1, delta * 2)
+
+        // Realistic acceleration with force and drag
+        // More thrust at low speeds (easier to accelerate), more drag at high speeds
+        const speedRatio = Math.abs(player.speed) / maxSpeed
+        const dragFactor = 1 + speedRatio * speedRatio * 2 // Quadratic drag
+        const thrustFactor = Math.max(0.2, 1 - speedRatio * 0.5) // More effective thrust at low speeds
+
+        // Acceleration rate: faster at low speeds, slower at high speeds
+        // With 300% more power, acceleration should be much quicker
+        const baseAcceleration = 6 // Increased from 2 to 6 (3x faster)
+        const accelerationRate = baseAcceleration * thrustFactor / dragFactor
+
+        // Apply acceleration/deceleration
+        const speedDiff = targetSpeed - player.speed
+        const accelerationAmount = speedDiff * Math.min(1, delta * accelerationRate)
+        player.speed += accelerationAmount
 
         // Apply steering (only when moving)
         if (Math.abs(player.speed) > 0.1) {

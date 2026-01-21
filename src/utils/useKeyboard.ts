@@ -8,6 +8,9 @@ interface KeyState {
   boost: boolean    // Shift
   toggleCamera: boolean // V (press event only)
   resetCamera: boolean  // N (press event only)
+  cameraPreset1: boolean // 1 (close-up view)
+  cameraPreset2: boolean // 2 (side view)
+  cameraPreset3: boolean // 3 (bird's eye view)
 }
 
 export function useKeyboard(): KeyState {
@@ -19,6 +22,9 @@ export function useKeyboard(): KeyState {
     boost: false,
     toggleCamera: false,
     resetCamera: false,
+    cameraPreset1: false,
+    cameraPreset2: false,
+    cameraPreset3: false,
   })
 
   useEffect(() => {
@@ -58,6 +64,21 @@ export function useKeyboard(): KeyState {
           // Reset camera to default back view (one-shot)
           setKeys((k) => ({ ...k, resetCamera: true }))
           setTimeout(() => setKeys((k) => ({ ...k, resetCamera: false })), 100)
+          break
+        case 'Digit1':
+          // Camera preset 1: Close-up view
+          setKeys((k) => ({ ...k, cameraPreset1: true }))
+          setTimeout(() => setKeys((k) => ({ ...k, cameraPreset1: false })), 100)
+          break
+        case 'Digit2':
+          // Camera preset 2: Side view
+          setKeys((k) => ({ ...k, cameraPreset2: true }))
+          setTimeout(() => setKeys((k) => ({ ...k, cameraPreset2: false })), 100)
+          break
+        case 'Digit3':
+          // Camera preset 3: Bird's eye view
+          setKeys((k) => ({ ...k, cameraPreset3: true }))
+          setTimeout(() => setKeys((k) => ({ ...k, cameraPreset3: false })), 100)
           break
       }
     }
