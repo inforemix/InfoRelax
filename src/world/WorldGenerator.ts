@@ -19,6 +19,13 @@ export interface Iceberg {
   seed: number;
 }
 
+export interface FloatingIce {
+  id: string;
+  position: [number, number];
+  radius: number;  // Smaller than icebergs (2-8 units)
+  seed: number;
+}
+
 export interface RaceRoute {
   id: string;
   name: string;
@@ -63,6 +70,7 @@ export interface WorldData {
   bounds: { min: [number, number]; max: [number, number] };
   islands: Island[];
   icebergs: Iceberg[];
+  floatingIce: FloatingIce[];  // Smaller ice chunks
   windZones: WindZone[];
   pois: POI[];
   marina: Marina;
@@ -71,20 +79,23 @@ export interface WorldData {
 
 const perlin = new Perlin(0);
 
-// Difficulty settings for iceberg generation
+// Difficulty settings for iceberg and floating ice generation
 const DIFFICULTY_SETTINGS: Record<WorldDifficulty, {
   icebergCount: number;
   minRadius: number;
   maxRadius: number;
   minHeight: number;
   maxHeight: number;
-  minSpawnDist: number;   // Minimum distance from marina
-  maxSpawnDist: number;   // Maximum distance from marina
+  minSpawnDist: number;
+  maxSpawnDist: number;
+  floatingIceCount: number;  // Smaller ice chunks
+  floatingIceMinRadius: number;
+  floatingIceMaxRadius: number;
 }> = {
-  peaceful: { icebergCount: 12, minRadius: 12, maxRadius: 30, minHeight: 10, maxHeight: 25, minSpawnDist: 800, maxSpawnDist: 4000 },
-  moderate: { icebergCount: 35, minRadius: 15, maxRadius: 40, minHeight: 15, maxHeight: 35, minSpawnDist: 500, maxSpawnDist: 4500 },
-  challenging: { icebergCount: 60, minRadius: 20, maxRadius: 50, minHeight: 20, maxHeight: 45, minSpawnDist: 400, maxSpawnDist: 5000 },
-  extreme: { icebergCount: 100, minRadius: 25, maxRadius: 60, minHeight: 25, maxHeight: 55, minSpawnDist: 300, maxSpawnDist: 5000 },
+  peaceful: { icebergCount: 12, minRadius: 12, maxRadius: 30, minHeight: 10, maxHeight: 25, minSpawnDist: 800, maxSpawnDist: 4000, floatingIceCount: 30, floatingIceMinRadius: 2, floatingIceMaxRadius: 6 },
+  moderate: { icebergCount: 35, minRadius: 15, maxRadius: 40, minHeight: 15, maxHeight: 35, minSpawnDist: 500, maxSpawnDist: 4500, floatingIceCount: 80, floatingIceMinRadius: 2, floatingIceMaxRadius: 8 },
+  challenging: { icebergCount: 60, minRadius: 20, maxRadius: 50, minHeight: 20, maxHeight: 45, minSpawnDist: 400, maxSpawnDist: 5000, floatingIceCount: 150, floatingIceMinRadius: 3, floatingIceMaxRadius: 10 },
+  extreme: { icebergCount: 100, minRadius: 25, maxRadius: 60, minHeight: 25, maxHeight: 55, minSpawnDist: 300, maxSpawnDist: 5000, floatingIceCount: 250, floatingIceMinRadius: 3, floatingIceMaxRadius: 12 },
 };
 
 export function generateWorld(seed: number, worldSize: number = 10000, difficulty: WorldDifficulty = 'moderate'): WorldData {
@@ -97,6 +108,7 @@ export function generateWorld(seed: number, worldSize: number = 10000, difficult
 
   const islands = generateIslands(seed, bounds);
   const icebergs = generateIcebergs(seed, bounds, difficulty, islands);
+  const floatingIce = generateFloatingIce(seed, bounds, difficulty, islands, icebergs);
   const windZones = generateWindZones(seed, bounds);
   const pois = generatePOIs(seed, bounds, islands);
   const marina = generateMarina(bounds);
@@ -108,6 +120,7 @@ export function generateWorld(seed: number, worldSize: number = 10000, difficult
     bounds,
     islands,
     icebergs,
+    floatingIce,
     windZones,
     pois,
     marina,
@@ -370,6 +383,82 @@ function generateIcebergs(
   return icebergs;
 }
 
+function generateFloatingIce(
+  seed: number,
+  bounds: WorldData['bounds'],
+  difficulty: WorldDifficulty,
+  islands: Island[],
+  icebergs: Iceberg[]
+): FloatingIce[] {
+  const floatingIce: FloatingIce[] = [];
+  const settings = DIFFICULTY_SETTINGS[difficulty];
+
+  let attempts = 0;
+  const maxAttempts = settings.floatingIceCount * 2;
+
+  while (floatingIce.length < settings.floatingIceCount && attempts < maxAttempts) {
+    attempts++;
+
+    // Random position within bounds, closer to center than icebergs
+    const angle = perlin.noise(seed + attempts * 500, 500) * Math.PI * 2;
+    const dist = 200 + Math.abs(perlin.noise(seed + attempts * 501, 501)) * 3500;
+
+    let x = Math.cos(angle) * dist;
+    let z = Math.sin(angle) * dist;
+
+    // Add more randomness
+    x += perlin.noise(seed + attempts * 502, 502) * 200;
+    z += perlin.noise(seed + attempts * 503, 503) * 200;
+
+    // Clamp to bounds
+    x = Math.max(bounds.min[0] + 100, Math.min(bounds.max[0] - 100, x));
+    z = Math.max(bounds.min[1] + 100, Math.min(bounds.max[1] - 100, z));
+
+    // Skip if too close to marina
+    const distToMarina = Math.sqrt(x * x + z * z);
+    if (distToMarina < 150) continue;
+
+    // Skip if too close to any island
+    let tooClose = false;
+    for (const island of islands) {
+      const dx = x - island.position[0];
+      const dz = z - island.position[1];
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < island.radius + 30) {
+        tooClose = true;
+        break;
+      }
+    }
+    if (tooClose) continue;
+
+    // Skip if too close to icebergs
+    for (const iceberg of icebergs) {
+      const dx = x - iceberg.position[0];
+      const dz = z - iceberg.position[1];
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < iceberg.radius + 20) {
+        tooClose = true;
+        break;
+      }
+    }
+    if (tooClose) continue;
+
+    // Generate floating ice properties
+    const radius = settings.floatingIceMinRadius +
+      Math.abs(perlin.noise(seed + attempts * 504, 504)) *
+      (settings.floatingIceMaxRadius - settings.floatingIceMinRadius);
+
+    floatingIce.push({
+      id: `floating-ice-${floatingIce.length}`,
+      position: [x, z],
+      radius,
+      seed: seed + attempts * 2000,
+    });
+  }
+
+  return floatingIce;
+}
+
 function generateRaces(
   seed: number,
   bounds: WorldData['bounds'],
@@ -487,4 +576,32 @@ export function checkIcebergCollision(
   }
 
   return { collided: false, iceberg: null, penetration: 0, normal: [0, 0] };
+}
+
+export function checkFloatingIceCollision(
+  floatingIce: FloatingIce[],
+  x: number,
+  z: number,
+  boatRadius: number = 8
+): { collided: boolean; ice: FloatingIce | null; penetration: number; normal: [number, number] } {
+  for (const ice of floatingIce) {
+    const dx = x - ice.position[0];
+    const dz = z - ice.position[1];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const collisionDist = ice.radius + boatRadius;
+
+    if (dist < collisionDist) {
+      const penetration = collisionDist - dist;
+      const normalX = dist > 0 ? dx / dist : 1;
+      const normalZ = dist > 0 ? dz / dist : 0;
+      return {
+        collided: true,
+        ice,
+        penetration,
+        normal: [normalX, normalZ],
+      };
+    }
+  }
+
+  return { collided: false, ice: null, penetration: 0, normal: [0, 0] };
 }

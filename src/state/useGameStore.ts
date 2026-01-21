@@ -72,6 +72,10 @@ interface GameState {
   distanceToCheckpoint: Record<string, number> // Checkpoint distances
   lastPassedCheckpoint: string | null // For race checkpoint tracking
 
+  // Auto-dock
+  isAutoDocking: boolean
+  autoDockTarget: [number, number] | null
+
   // Actions
   setTimeOfDay: (time: number) => void
   setWeather: (weather: Weather) => void
@@ -87,6 +91,7 @@ interface GameState {
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
   handleCollision: (icebergId: string, penetration: number, normalX: number, normalZ: number, icebergRadius: number) => void
   repairBoat: () => void
+  setAutoDock: (enabled: boolean, target?: [number, number]) => void
 }
 
 // Use weather presets from WindSystem (re-export for compatibility)
@@ -143,7 +148,11 @@ export const useGameStore = create<GameState>()(
     nearbyCheckpoints: [],
     distanceToCheckpoint: {},
     lastPassedCheckpoint: null,
-    
+
+    // Auto-dock
+    isAutoDocking: false,
+    autoDockTarget: null,
+
     // Actions
     setTimeOfDay: (time) => {
       set((state) => {
@@ -238,6 +247,49 @@ export const useGameStore = create<GameState>()(
     },
 
     updatePlayerPosition: (delta, maxSpeed, turnRate) => {
+      const gameState = get()
+
+      // Handle auto-dock navigation
+      if (gameState.isAutoDocking && gameState.autoDockTarget) {
+        const target = gameState.autoDockTarget
+        const pos = gameState.player.position
+
+        // Calculate direction to target
+        const dx = target[0] - pos[0]
+        const dz = target[1] - pos[2]
+        const distToTarget = Math.sqrt(dx * dx + dz * dz)
+
+        // If we're close enough, stop auto-docking
+        if (distToTarget < 50) {
+          set((s) => {
+            s.isAutoDocking = false
+            s.autoDockTarget = null
+            s.player.throttle = 0
+            s.player.steering = 0
+          })
+          return
+        }
+
+        // Calculate target angle (angle from boat to target)
+        const targetAngle = Math.atan2(dx, dz)
+
+        // Calculate angle difference (normalize to [-PI, PI])
+        let angleDiff = targetAngle - gameState.player.rotation
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2
+
+        // Set steering based on angle difference
+        const steeringAmount = Math.max(-1, Math.min(1, angleDiff * 2))
+
+        // Adjust throttle based on distance (slow down when close)
+        const throttleAmount = distToTarget < 200 ? Math.max(20, (distToTarget / 200) * 50) : 50
+
+        set((s) => {
+          s.player.steering = steeringAmount
+          s.player.throttle = throttleAmount
+        })
+      }
+
       set((state) => {
         const { player } = state
 
@@ -265,6 +317,10 @@ export const useGameStore = create<GameState>()(
           const turnAmount = player.steering * turnRate * delta * (player.speed / maxSpeed)
           player.rotation += turnAmount
         }
+
+        // Normalize rotation to [-PI, PI] to prevent precision issues and map flipping
+        while (player.rotation > Math.PI) player.rotation -= Math.PI * 2
+        while (player.rotation < -Math.PI) player.rotation += Math.PI * 2
 
         // Convert speed from knots to m/s for position update
         const speedMs = player.speed * 0.514
@@ -429,6 +485,17 @@ export const useGameStore = create<GameState>()(
         state.boatDamage.collisionCount = 0
         state.boatDamage.lastCollisionTime = null
         state.boatDamage.lastCollisionIcebergId = null
+      })
+    },
+
+    setAutoDock: (enabled, target) => {
+      set((state) => {
+        state.isAutoDocking = enabled
+        state.autoDockTarget = enabled && target ? target : null
+        // When auto-dock is enabled, set a moderate throttle
+        if (enabled) {
+          state.player.throttle = 50
+        }
       })
     },
   }))

@@ -49,9 +49,10 @@ export function Yacht() {
       throttle = Math.max(0, throttle - 2)
     }
 
-    // Steering: A = left (-1), D = right (+1)
-    if (keys.left) steering -= 1
-    if (keys.right) steering += 1
+    // Steering: A = left (negative rotation), D = right (positive rotation)
+    // Inverted signs to match intuitive left/right feel
+    if (keys.left) steering += 1   // A turns boat left
+    if (keys.right) steering -= 1  // D turns boat right
 
     setThrottle(throttle)
     setSteering(steering)
