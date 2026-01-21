@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useYachtStore, HullType } from '@/state/useYachtStore'
 import { KaleidoscopeCanvas } from '@/editor/KaleidoscopeCanvas'
 import { HullGridEditor } from '@/editor/HullGridEditor'
@@ -109,7 +109,7 @@ type EditorPanel = 'turbine' | 'hull' | 'energy'
 type EditorMode = 'simple' | 'advanced'
 
 export function BuildMode() {
-  const { currentYacht, setHull, setTurbine, setBladeProfile, setSolar, setBattery, stats } = useYachtStore()
+  const { currentYacht, setHull, setTurbine, setBladeProfile, setSolar, setBattery, stats, setProceduralHullConfig } = useYachtStore()
   const { hull, turbine, solar, battery } = currentYacht
   const [activePanel, setActivePanel] = useState<EditorPanel>('turbine')
   const [editorMode, setEditorMode] = useState<EditorMode>('simple')
@@ -147,18 +147,42 @@ export function BuildMode() {
     setBladeProfile(points)
   }, [setBladeProfile])
 
-  // Sync advanced config changes back to basic store
+  // Set/clear procedural hull config based on editor mode and active panel
+  useEffect(() => {
+    if (editorMode === 'advanced' && activePanel === 'hull') {
+      // When in advanced hull mode, use procedural hull rendering
+      setProceduralHullConfig(advancedHullConfig)
+    } else {
+      // When not in advanced hull mode, use parametric hull
+      setProceduralHullConfig(null)
+    }
+  }, [editorMode, activePanel, advancedHullConfig, setProceduralHullConfig])
+
+  // Sync advanced config changes back to basic store and procedural hull
   const handleAdvancedHullChange = useCallback((changes: Partial<ProceduralHullConfig>) => {
     setAdvancedHullConfig(prev => {
       const updated = { ...prev, ...changes }
+      // Merge nested objects properly
+      if (changes.bow) updated.bow = { ...prev.bow, ...changes.bow }
+      if (changes.stern) updated.stern = { ...prev.stern, ...changes.stern }
+      if (changes.keel) updated.keel = { ...prev.keel, ...changes.keel }
+      if (changes.chine) updated.chine = { ...prev.chine, ...changes.chine }
+      if (changes.deck) updated.deck = { ...prev.deck, ...changes.deck }
+      if (changes.rocker) updated.rocker = { ...prev.rocker, ...changes.rocker }
+      if (changes.colors) updated.colors = { ...prev.colors, ...changes.colors }
+
       // Sync key properties back to basic hull config
       if (changes.length !== undefined) setHull({ length: changes.length })
       if (changes.beam !== undefined) setHull({ beam: changes.beam })
       if (changes.draft !== undefined) setHull({ draft: changes.draft })
       if (changes.bow?.type !== undefined) setHull({ bowShape: changes.bow.type as typeof hull.bowShape })
+
+      // Update procedural hull config in store for 3D rendering
+      setProceduralHullConfig(updated)
+
       return updated
     })
-  }, [setHull])
+  }, [setHull, setProceduralHullConfig])
 
   const handleAdvancedTurbineChange = useCallback((changes: Partial<ProceduralTurbineConfig>) => {
     setAdvancedTurbineConfig(prev => {
@@ -707,10 +731,10 @@ export function BuildMode() {
         </div>
       </div>
 
-      {/* Right Panel - 2/3 preview (transparent) */}
-      <div className="w-2/3 h-full relative">
+      {/* Right Panel - 2/3 preview (transparent, pass-through mouse events) */}
+      <div className="w-2/3 h-full relative pointer-events-none">
         {/* Hint at bottom */}
-        <div className="absolute bottom-4 right-4 bg-slate-900/60 backdrop-blur-sm px-2 py-1 rounded">
+        <div className="absolute bottom-4 right-4 bg-slate-900/60 backdrop-blur-sm px-2 py-1 rounded pointer-events-auto">
           <p className="text-[9px] text-slate-500">Drag to rotate • Scroll to zoom</p>
         </div>
       </div>

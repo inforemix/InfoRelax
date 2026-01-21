@@ -7,6 +7,7 @@ import {
   calculateFoilTakeoffSpeed,
   WATER_DENSITY,
 } from '../physics/WaterPhysics'
+import type { ProceduralHullConfig } from '../editor/HullTypes'
 
 // Hull Types
 export type HullType = 'monohull' | 'catamaran' | 'trimaran' | 'hydrofoil'
@@ -153,25 +154,29 @@ const defaultYacht: YachtConfig = {
 interface YachtState {
   // Current yacht being edited/sailed
   currentYacht: YachtConfig
-  
+
+  // Procedural hull config for advanced editor (optional)
+  proceduralHullConfig: ProceduralHullConfig | null
+
   // Calculated stats (derived from config)
   stats: YachtStats
-  
+
   // Saved yacht designs
   savedYachts: YachtConfig[]
-  
+
   // Actions
   setHull: (hull: Partial<HullConfig>) => void
   setTurbine: (turbine: Partial<TurbineConfig>) => void
   setSolar: (solar: Partial<SolarConfig>) => void
   setBattery: (battery: Partial<BatteryConfig>) => void
   setBladeProfile: (points: BladePoint[]) => void
+  setProceduralHullConfig: (config: ProceduralHullConfig | null) => void
   addDeckModule: (module: string) => void
   removeDeckModule: (module: string) => void
   saveYacht: () => void
   loadYacht: (id: string) => void
   resetYacht: () => void
-  
+
   // Internal
   recalculateStats: () => void
 }
@@ -255,6 +260,7 @@ function calculateStats(yacht: YachtConfig): YachtStats {
 export const useYachtStore = create<YachtState>()(
   immer((set, get) => ({
     currentYacht: defaultYacht,
+    proceduralHullConfig: null,
     stats: calculateStats(defaultYacht),
     savedYachts: [],
     
@@ -292,7 +298,13 @@ export const useYachtStore = create<YachtState>()(
       })
       get().recalculateStats()
     },
-    
+
+    setProceduralHullConfig: (config) => {
+      set((state) => {
+        state.proceduralHullConfig = config
+      })
+    },
+
     addDeckModule: (module) => {
       set((state) => {
         if (!state.currentYacht.deckModules.includes(module)) {

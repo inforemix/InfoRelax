@@ -132,6 +132,8 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
   const [currentPath, setCurrentPath] = useState<HullPoint[]>([])
   const [selectedPresetCategory, setSelectedPresetCategory] = useState<keyof typeof HULL_CATEGORIES>('cruising')
   const [showPresets, setShowPresets] = useState(false)
+  const [isModified, setIsModified] = useState(false)
+  const [savedConfig, setSavedConfig] = useState<ProceduralHullConfig | null>(null)
 
   const center = size / 2
   const scale = size / 2.4 // Leave margin
@@ -532,33 +534,73 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
         break
     }
 
+    setIsModified(true)
     setCurrentPath([])
   }
 
-  // Clear current view profile
+  // Clear current view profile and reset to default
   const clearProfile = () => {
+    // Default profiles for each view (simple hull shape)
+    const defaultWaterline: ControlPoint[] = [
+      { x: -0.8, y: 0 },
+      { x: -0.4, y: 0.3 },
+      { x: 0.2, y: 0.4 },
+      { x: 0.8, y: 0.2 },
+    ]
+    const defaultButtock: ControlPoint[] = [
+      { x: -0.8, y: -0.2 },
+      { x: -0.3, y: -0.1 },
+      { x: 0.3, y: 0 },
+      { x: 0.8, y: 0.1 },
+    ]
+    const defaultSection: ControlPoint[] = [
+      { x: 0, y: -0.3 },
+      { x: 0.2, y: -0.1 },
+      { x: 0.4, y: 0.2 },
+    ]
+
     switch (editorState.activeView) {
       case 'top':
-        onConfigChange({ waterlineProfile: [] })
+        onConfigChange({ waterlineProfile: defaultWaterline })
         break
       case 'side':
-        onConfigChange({ buttockProfile: [] })
+        onConfigChange({ buttockProfile: defaultButtock })
         break
       case 'front':
         const sections = [...config.crossSections]
         sections[editorState.currentSection] = {
           ...sections[editorState.currentSection],
-          profile: [],
+          profile: defaultSection,
         }
         onConfigChange({ crossSections: sections })
         break
+    }
+    setIsModified(true)
+  }
+
+  // Save current design
+  const saveDesign = () => {
+    setSavedConfig({ ...config })
+    setIsModified(false)
+  }
+
+  // Reset to saved design
+  const resetToSaved = () => {
+    if (savedConfig) {
+      onConfigChange(savedConfig)
+      setIsModified(false)
     }
   }
 
   // Load preset
   const loadPreset = (preset: HullPreset) => {
     if (preset.config) {
+      // Save current config before loading preset (allows reset)
+      if (!savedConfig) {
+        setSavedConfig({ ...config })
+      }
       onConfigChange(preset.config)
+      setIsModified(true)
     }
     setShowPresets(false)
   }
@@ -663,10 +705,34 @@ export function HullGridEditor({ config, onConfigChange, size = 400 }: HullGridE
         </button>
       </div>
 
-      {/* Instructions */}
-      <p className="text-[10px] text-slate-500 text-center">
-        Draw hull shape from {editorState.activeView === 'top' ? 'stern to bow' : editorState.activeView === 'side' ? 'left to right' : 'centerline outward'}
-      </p>
+      {/* Instructions and Save/Reset */}
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] text-slate-500">
+          Draw from {editorState.activeView === 'top' ? 'stern→bow' : editorState.activeView === 'side' ? 'left→right' : 'center→out'}
+        </p>
+        <div className="flex gap-1">
+          {isModified && (
+            <>
+              <button
+                onClick={resetToSaved}
+                disabled={!savedConfig}
+                className="px-2 py-0.5 rounded text-[9px] bg-slate-700 text-slate-400 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Reset to saved"
+              >
+                ↩ Reset
+              </button>
+              <button
+                onClick={saveDesign}
+                className="px-2 py-0.5 rounded text-[9px] bg-green-600 text-white hover:bg-green-500"
+                title="Save design"
+              >
+                ✓ Save
+              </button>
+            </>
+          )}
+          {isModified && <span className="text-[9px] text-amber-400 ml-1">●</span>}
+        </div>
+      </div>
 
       {/* Section selector for front view */}
       {editorState.activeView === 'front' && (

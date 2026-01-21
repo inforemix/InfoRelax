@@ -8,13 +8,14 @@ import { useGameStore } from '@/state/useGameStore'
 import { useRaceStore } from '@/state/useRaceStore'
 import { useKeyboard } from '@/utils/useKeyboard'
 import { ParametricHull } from './hulls/HullGenerator'
+import { ProceduralHull } from './hulls/ProceduralHull'
 import { CustomTurbine } from './CustomTurbine'
 
 export function Yacht() {
   const groupRef = useRef<THREE.Group>(null)
 
   // Get yacht config from store
-  const { currentYacht, stats } = useYachtStore()
+  const { currentYacht, stats, proceduralHullConfig } = useYachtStore()
   const { hull, turbine } = currentYacht
 
   // Get game state
@@ -121,8 +122,12 @@ export function Yacht() {
 
   return (
     <group ref={groupRef}>
-      {/* Parametric Hull - responds to hull type, dimensions, and bow shape */}
-      <ParametricHull config={hull} />
+      {/* Hull - use procedural hull if available, otherwise parametric */}
+      {proceduralHullConfig ? (
+        <ProceduralHull config={proceduralHullConfig} />
+      ) : (
+        <ParametricHull config={hull} />
+      )}
 
       {/* Custom Turbine - uses blade profile from Kaleidoscope editor */}
       <CustomTurbine
