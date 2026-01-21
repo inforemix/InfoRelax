@@ -196,8 +196,22 @@ export const useGameStore = create<GameState>()(
 
         // Calculate current speed based on throttle (knots to m/s: 1 knot ≈ 0.514 m/s)
         const targetSpeed = (player.throttle / 100) * maxSpeed
-        // Gradually accelerate/decelerate
-        player.speed = player.speed + (targetSpeed - player.speed) * Math.min(1, delta * 2)
+
+        // Realistic acceleration with force and drag
+        // More thrust at low speeds (easier to accelerate), more drag at high speeds
+        const speedRatio = Math.abs(player.speed) / maxSpeed
+        const dragFactor = 1 + speedRatio * speedRatio * 2 // Quadratic drag
+        const thrustFactor = Math.max(0.2, 1 - speedRatio * 0.5) // More effective thrust at low speeds
+
+        // Acceleration rate: faster at low speeds, slower at high speeds
+        // With 300% more power, acceleration should be much quicker
+        const baseAcceleration = 6 // Increased from 2 to 6 (3x faster)
+        const accelerationRate = baseAcceleration * thrustFactor / dragFactor
+
+        // Apply acceleration/deceleration
+        const speedDiff = targetSpeed - player.speed
+        const accelerationAmount = speedDiff * Math.min(1, delta * accelerationRate)
+        player.speed += accelerationAmount
 
         // Apply steering (only when moving)
         if (Math.abs(player.speed) > 0.1) {

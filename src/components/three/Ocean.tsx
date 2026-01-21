@@ -4,6 +4,7 @@ import { useTexture } from '@react-three/drei'
 import { useControls } from 'leva'
 import * as THREE from 'three'
 import { Water } from 'three/addons/objects/Water.js'
+import { useGameStore } from '../../state/useGameStore'
 
 interface OceanProps {
   size?: number
@@ -13,6 +14,7 @@ interface OceanProps {
 export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
   const waterRef = useRef<Water>(null)
   const { scene } = useThree()
+  const { setWind, setWeather } = useGameStore()
 
   // Load water normal texture
   const waterNormals = useTexture('/textures/waternormals.jpg', (texture) => {
@@ -34,6 +36,28 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     waveSize: { value: 1.0, min: 0.1, max: 5, step: 0.1, label: 'Wave Size' },
   })
 
+  // Add wind and environment controls to Leva
+  const windControls = useControls('Wind & Environment', {
+    windDirection: { value: 45, min: 0, max: 360, step: 5, label: 'Wind Direction (°)' },
+    windSpeed: { value: 10, min: 0, max: 25, step: 0.5, label: 'Wind Speed (m/s)' },
+    gustFactor: { value: 0.15, min: 0, max: 1, step: 0.05, label: 'Gust Factor' },
+    weather: {
+      value: 'trade-winds',
+      options: ['clear', 'cloudy', 'trade-winds', 'storm', 'doldrums'],
+      label: 'Weather'
+    },
+  })
+
+  // Sync wind controls to game state
+  useEffect(() => {
+    setWind({
+      direction: windControls.windDirection,
+      speed: windControls.windSpeed,
+      gustFactor: windControls.gustFactor,
+    })
+    setWeather(windControls.weather as any)
+  }, [windControls.windDirection, windControls.windSpeed, windControls.gustFactor, windControls.weather, setWind, setWeather])
+
   // Create water geometry
   const waterGeometry = useMemo(() => {
     return new THREE.PlaneGeometry(size, size, segments, segments)
@@ -53,19 +77,10 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     })
 
     waterObj.rotation.x = -Math.PI / 2
-    waterObj.position.y = -0.1 // Slightly below sea level to prevent z-fighting
-
-    // Set render order to ensure ocean renders first
-    waterObj.renderOrder = -1
-
-    // Ensure proper depth settings
-    if (waterObj.material) {
-      waterObj.material.depthWrite = true
-      waterObj.material.depthTest = true
-    }
+    waterObj.position.y = 0
 
     return waterObj
-  }, [waterGeometry, waterNormals, scene.fog, sunColor, waterColor, distortionScale])
+  }, [waterGeometry, waterNormals, scene.fog])
 
   // Update water parameters when controls change
   useEffect(() => {

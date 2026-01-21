@@ -249,8 +249,8 @@ export function calculateMotorConsumption(
   _maxSpeed: number,       // knots (reserved for speed-based efficiency curves)
   hullDrag: number         // Newtons at test speed
 ): MotorConsumptionResult {
-  // Motor specs (typical electric yacht motor)
-  const maxMotorPower = 15 // kW
+  // Motor specs (high-performance electric yacht motor - 300% boost)
+  const maxMotorPower = 60 // kW (4x original 15 kW for 300% increase)
   const motorEfficiency = 0.92
 
   // Power needed: drag force × velocity
