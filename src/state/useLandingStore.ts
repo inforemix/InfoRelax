@@ -33,24 +33,25 @@ export const MAP_PRESETS: Record<string, MapPreset> = {
     difficulty: 'peaceful',
     features: ['Calm winds', 'Nearby islands', 'Easy navigation', 'POI bonuses'],
   },
-  'trade-winds': {
-    id: 'trade-winds',
-    name: 'Trade Winds Routes',
-    description: 'Classic sailing experience with consistent regional weather',
-    seed: 123,
-    worldSize: 10000,
-    difficulty: 'moderate',
-    features: ['Variable winds', 'Dispersed islands', 'Racing available', 'Energy focus'],
-  },
-  'storm-archipelago': {
-    id: 'storm-archipelago',
-    name: 'Storm Archipelago',
-    description: 'Challenging weather patterns and powerful wind zones',
-    seed: 456,
-    worldSize: 12000,
-    difficulty: 'challenging',
-    features: ['Storm paths', 'Fast winds', 'Scattered islands', 'High rewards'],
-  },
+  // Disabled for MVP - focusing on peaceful world tuning
+  // 'trade-winds': {
+  //   id: 'trade-winds',
+  //   name: 'Trade Winds Routes',
+  //   description: 'Classic sailing experience with consistent regional weather',
+  //   seed: 123,
+  //   worldSize: 10000,
+  //   difficulty: 'moderate',
+  //   features: ['Variable winds', 'Dispersed islands', 'Racing available', 'Energy focus'],
+  // },
+  // 'storm-archipelago': {
+  //   id: 'storm-archipelago',
+  //   name: 'Storm Archipelago',
+  //   description: 'Challenging weather patterns and powerful wind zones',
+  //   seed: 456,
+  //   worldSize: 12000,
+  //   difficulty: 'challenging',
+  //   features: ['Storm paths', 'Fast winds', 'Scattered islands', 'High rewards'],
+  // },
 }
 
 export const useLandingStore = create<LandingState>((set) => ({

@@ -15,7 +15,13 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
   const currentCheckpoint = useRaceStore((state) => state.currentCheckpoint)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [isExpanded, setIsExpanded] = useState(!minimized)
+
+  // Draggable state
+  const [position, setPosition] = useState({ x: window.innerWidth - 340, y: 80 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     if (!world || !canvasRef.current) return
@@ -232,22 +238,71 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
 
   }, [world, player, size, currentRace, currentCheckpoint])
 
+  // Drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    })
+    setIsDragging(true)
+  }
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return
+      setPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y,
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragOffset])
+
   if (!world) return null
 
   return (
-    <div className="absolute top-20 right-4 z-10">
+    <div
+      ref={containerRef}
+      className="fixed z-10"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        cursor: isDragging ? 'grabbing' : 'grab',
+      }}
+    >
       <div
         className={`bg-slate-900/95 border border-cyan-500/40 rounded-lg shadow-lg transition-all duration-300 ${
           isExpanded ? 'p-3' : 'p-2'
         }`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-cyan-400 font-semibold text-xs tracking-wide">
-            {isExpanded ? 'NAV MAP' : '🗺️'}
+        {/* Header - Draggable handle */}
+        <div
+          className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+        >
+          <h3 className="text-cyan-400 font-semibold text-xs tracking-wide select-none">
+            {isExpanded ? '🗺️ NAV MAP (Drag to Move)' : '🗺️'}
           </h3>
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => {
+              e.stopPropagation() // Prevent drag when clicking expand button
+              setIsExpanded(!isExpanded)
+            }}
             className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-cyan-500/20"
           >
             {isExpanded ? '−' : '+'}
