@@ -226,8 +226,8 @@ export function EnhancedSky() {
   })
 
   return (
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[5000, 32, 32]} />
+    <mesh ref={meshRef} renderOrder={-1000}>
+      <sphereGeometry args={[9000, 32, 32]} />
       <primitive object={skyMaterial} attach="material" />
     </mesh>
   )

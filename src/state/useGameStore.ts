@@ -21,6 +21,19 @@ export interface EnergyState {
   netPower: number         // kW (positive = charging)
 }
 
+export interface BatteryState {
+  currentCharge: number    // kWh stored
+  chargePercent: number    // 0-100%
+  capacity: number         // kWh total
+}
+
+export interface BoatDamageState {
+  hullIntegrity: number    // 0-100%
+  collisionCount: number
+  lastCollisionTime: number | null
+  lastCollisionIcebergId: string | null
+}
+
 export interface PlayerState {
   position: [number, number, number]
   rotation: number         // Y-axis rotation (radians)
@@ -45,15 +58,23 @@ interface GameState {
   // Energy
   energy: EnergyState
   energyCredits: number    // Total EC earned
+  battery: BatteryState    // Dynamic battery state
 
   // Player
   player: PlayerState
+
+  // Boat damage (persistent across racing and free sailing)
+  boatDamage: BoatDamageState
 
   // World state
   currentWindZone: string | null  // Wind zone ID if in one
   nearbyCheckpoints: string[]     // Checkpoint IDs in range
   distanceToCheckpoint: Record<string, number> // Checkpoint distances
   lastPassedCheckpoint: string | null // For race checkpoint tracking
+
+  // Auto-dock
+  isAutoDocking: boolean
+  autoDockTarget: [number, number] | null
 
   // Actions
   setTimeOfDay: (time: number) => void
@@ -68,6 +89,9 @@ interface GameState {
   updateEnergy: (delta: number) => void
   updateCheckpointDetection: (checkpoints: any[]) => void
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
+  handleCollision: (icebergId: string, penetration: number, normalX: number, normalZ: number, icebergRadius: number) => void
+  repairBoat: () => void
+  setAutoDock: (enabled: boolean, target?: [number, number]) => void
 }
 
 // Use weather presets from WindSystem (re-export for compatibility)
@@ -99,6 +123,12 @@ export const useGameStore = create<GameState>()(
 
     energyCredits: 0,
 
+    battery: {
+      currentCharge: 75,  // kWh stored (starts at 75% of 100 kWh)
+      chargePercent: 75,  // 0-100%
+      capacity: 100,      // kWh total
+    },
+
     player: {
       position: [0, 0, 150], // Spawn in front of marina pier
       rotation: 0, // Face away from the marina (180° rotated from previous)
@@ -107,11 +137,22 @@ export const useGameStore = create<GameState>()(
       steering: 0,
     },
 
+    boatDamage: {
+      hullIntegrity: 100,
+      collisionCount: 0,
+      lastCollisionTime: null,
+      lastCollisionIcebergId: null,
+    },
+
     currentWindZone: null,
     nearbyCheckpoints: [],
     distanceToCheckpoint: {},
     lastPassedCheckpoint: null,
-    
+
+    // Auto-dock
+    isAutoDocking: false,
+    autoDockTarget: null,
+
     // Actions
     setTimeOfDay: (time) => {
       set((state) => {
@@ -206,6 +247,49 @@ export const useGameStore = create<GameState>()(
     },
 
     updatePlayerPosition: (delta, maxSpeed, turnRate) => {
+      const gameState = get()
+
+      // Handle auto-dock navigation
+      if (gameState.isAutoDocking && gameState.autoDockTarget) {
+        const target = gameState.autoDockTarget
+        const pos = gameState.player.position
+
+        // Calculate direction to target
+        const dx = target[0] - pos[0]
+        const dz = target[1] - pos[2]
+        const distToTarget = Math.sqrt(dx * dx + dz * dz)
+
+        // If we're close enough, stop auto-docking
+        if (distToTarget < 50) {
+          set((s) => {
+            s.isAutoDocking = false
+            s.autoDockTarget = null
+            s.player.throttle = 0
+            s.player.steering = 0
+          })
+          return
+        }
+
+        // Calculate target angle (angle from boat to target)
+        const targetAngle = Math.atan2(dx, dz)
+
+        // Calculate angle difference (normalize to [-PI, PI])
+        let angleDiff = targetAngle - gameState.player.rotation
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2
+
+        // Set steering based on angle difference
+        const steeringAmount = Math.max(-1, Math.min(1, angleDiff * 2))
+
+        // Adjust throttle based on distance (slow down when close)
+        const throttleAmount = distToTarget < 200 ? Math.max(20, (distToTarget / 200) * 50) : 50
+
+        set((s) => {
+          s.player.steering = steeringAmount
+          s.player.throttle = throttleAmount
+        })
+      }
+
       set((state) => {
         const { player } = state
 
@@ -233,6 +317,10 @@ export const useGameStore = create<GameState>()(
           const turnAmount = player.steering * turnRate * delta * (player.speed / maxSpeed)
           player.rotation += turnAmount
         }
+
+        // Normalize rotation to [-PI, PI] to prevent precision issues and map flipping
+        while (player.rotation > Math.PI) player.rotation -= Math.PI * 2
+        while (player.rotation < -Math.PI) player.rotation += Math.PI * 2
 
         // Convert speed from knots to m/s for position update
         const speedMs = player.speed * 0.514
@@ -292,6 +380,10 @@ export const useGameStore = create<GameState>()(
       // Earn energy credits (only for positive generation)
       const energyGenerated = (safeTurbineOutput + solarOutput) * delta / 3600 // kWh
 
+      // Calculate battery change
+      const energyDelta = netPower * delta / 3600 // kWh change
+      const chargingEfficiency = netPower > 0 ? 0.95 : 1.0 // 95% efficiency when charging
+
       set((state) => {
         state.energy.turbineOutput = safeTurbineOutput
         state.energy.solarOutput = solarOutput
@@ -299,6 +391,12 @@ export const useGameStore = create<GameState>()(
         state.energy.systemsConsumption = systemsConsumption
         state.energy.netPower = netPower
         state.energyCredits += energyGenerated
+
+        // Update battery state
+        let newCharge = state.battery.currentCharge + energyDelta * chargingEfficiency
+        newCharge = Math.max(0, Math.min(state.battery.capacity, newCharge))
+        state.battery.currentCharge = newCharge
+        state.battery.chargePercent = (newCharge / state.battery.capacity) * 100
       })
     },
     
@@ -330,6 +428,75 @@ export const useGameStore = create<GameState>()(
 
       // Update energy calculations
       get().updateEnergy(delta)
+    },
+
+    handleCollision: (icebergId, penetration, normalX, normalZ, icebergRadius) => {
+      const now = Date.now()
+      const state = get()
+
+      // Cooldown check - prevent multiple collisions with same iceberg
+      if (
+        state.boatDamage.lastCollisionIcebergId === icebergId &&
+        state.boatDamage.lastCollisionTime &&
+        now - state.boatDamage.lastCollisionTime < 2000
+      ) {
+        // Just push the boat away without registering new damage
+        set((s) => {
+          s.player.position[0] += normalX * penetration * 1.5
+          s.player.position[2] += normalZ * penetration * 1.5
+          // Reduce speed on collision
+          s.player.speed *= 0.5
+        })
+        return
+      }
+
+      // Calculate damage based on speed and iceberg size
+      const speedFactor = Math.max(1, state.player.speed / 5)
+      const sizeFactor = Math.max(1, icebergRadius / 20)
+      const baseDamage = 5 + penetration * 0.5
+      const totalDamage = baseDamage * speedFactor * sizeFactor
+
+      set((s) => {
+        // Apply collision response - push boat away
+        s.player.position[0] += normalX * penetration * 1.5
+        s.player.position[2] += normalZ * penetration * 1.5
+
+        // Bounce effect - reflect velocity somewhat
+        const dotProduct = Math.sin(s.player.rotation) * normalX + Math.cos(s.player.rotation) * normalZ
+        if (dotProduct < 0) {
+          // Boat is moving toward iceberg, reflect
+          s.player.rotation += Math.PI * 0.3 * (normalX > 0 ? 1 : -1)
+        }
+
+        // Reduce speed significantly on collision
+        s.player.speed *= 0.3
+
+        // Apply damage
+        s.boatDamage.hullIntegrity = Math.max(0, s.boatDamage.hullIntegrity - totalDamage)
+        s.boatDamage.collisionCount += 1
+        s.boatDamage.lastCollisionTime = now
+        s.boatDamage.lastCollisionIcebergId = icebergId
+      })
+    },
+
+    repairBoat: () => {
+      set((state) => {
+        state.boatDamage.hullIntegrity = 100
+        state.boatDamage.collisionCount = 0
+        state.boatDamage.lastCollisionTime = null
+        state.boatDamage.lastCollisionIcebergId = null
+      })
+    },
+
+    setAutoDock: (enabled, target) => {
+      set((state) => {
+        state.isAutoDocking = enabled
+        state.autoDockTarget = enabled && target ? target : null
+        // When auto-dock is enabled, set a moderate throttle
+        if (enabled) {
+          state.player.throttle = 50
+        }
+      })
     },
   }))
 )

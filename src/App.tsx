@@ -12,6 +12,7 @@ import { Marina } from './components/three/Marina'
 import { EnvironmentDetails } from './components/three/EnvironmentDetails'
 import { PointsOfInterest } from './components/three/PointsOfInterest'
 import { RaceCheckpoints } from './components/three/RaceCheckpoints'
+import { Icebergs } from './components/three/Icebergs'
 import { WeatherEffects } from './components/three/WeatherEffects'
 import { DynamicLighting } from './components/three/DynamicLighting'
 import { ProceduralClouds } from './components/three/ProceduralClouds'
@@ -31,6 +32,7 @@ import { useLandingStore } from './state/useLandingStore'
 
 // Hooks
 import { useWorldIntegration } from './hooks/useWorldIntegration'
+import { useIcebergCollision } from './hooks/useIcebergCollision'
 
 export default function App() {
   const { gameMode, setGameMode } = useGameStore()
@@ -46,6 +48,9 @@ export default function App() {
 
   // Integrate world mechanics with game state
   useWorldIntegration()
+
+  // Iceberg collision detection
+  useIcebergCollision()
 
   // Show landing page if game hasn't started
   if (!gameStarted) {
@@ -88,6 +93,9 @@ export default function App() {
 
           {/* Player Yacht */}
           <Yacht />
+
+          {/* World Icebergs - Always visible */}
+          <Icebergs />
 
           {/* Racing */}
           {currentRace && <RaceCheckpoints />}

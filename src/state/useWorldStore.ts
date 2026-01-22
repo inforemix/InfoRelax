@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { WorldData, generateWorld } from '../world/WorldGenerator';
+import { WorldData, WorldDifficulty, generateWorld } from '../world/WorldGenerator';
 
 export interface WorldState {
   // World data
@@ -11,7 +11,7 @@ export interface WorldState {
   dockedAt: string | null; // Marina ID
 
   // Actions
-  initializeWorld: (seed: number, worldSize?: number) => void;
+  initializeWorld: (seed: number, worldSize?: number, difficulty?: WorldDifficulty) => void;
   discoverPOI: (poiId: string) => void;
   dock: (marinaId: string) => void;
   undock: () => void;
@@ -23,8 +23,8 @@ export const useWorldStore = create<WorldState>((set) => ({
   isDocked: false,
   dockedAt: null,
 
-  initializeWorld: (seed: number, worldSize?: number) => {
-    const world = generateWorld(seed, worldSize);
+  initializeWorld: (seed: number, worldSize?: number, difficulty: WorldDifficulty = 'moderate') => {
+    const world = generateWorld(seed, worldSize, difficulty);
     set({ world });
   },
 

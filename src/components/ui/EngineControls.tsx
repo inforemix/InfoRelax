@@ -1,13 +1,34 @@
 import { useGameStore } from '../../state/useGameStore'
 import { useYachtStore } from '../../state/useYachtStore'
+import { useWorldStore } from '../../state/useWorldStore'
 
 /**
  * Engine Controls - Shows thrust, throttle, and motor power
  * Displays real-time engine metrics and allows manual throttle control
  */
 export function EngineControls() {
-  const { player, energy, setThrottle } = useGameStore()
+  const { player, energy, setThrottle, isAutoDocking, setAutoDock } = useGameStore()
   const { stats } = useYachtStore()
+  const world = useWorldStore((state) => state.world)
+
+  // Get marina position for auto-dock
+  const marinaPosition = world?.marina?.position || [0, 0]
+
+  // Calculate distance to marina
+  const distToMarina = Math.sqrt(
+    Math.pow(player.position[0] - marinaPosition[0], 2) +
+    Math.pow(player.position[2] - marinaPosition[1], 2)
+  )
+
+  const handleAutoDock = () => {
+    if (isAutoDocking) {
+      // Cancel auto-dock
+      setAutoDock(false)
+    } else {
+      // Start auto-dock
+      setAutoDock(true, marinaPosition as [number, number])
+    }
+  }
 
   // Calculate thrust percentage based on throttle and current speed
   const thrustPercentage = (player.throttle / 100) * Math.min(1, player.speed / stats.maxSpeed * 2)
@@ -170,6 +191,29 @@ export function EngineControls() {
             />
           )
         })}
+      </div>
+
+      {/* Auto-Dock Button */}
+      <div className="mb-3">
+        <button
+          onClick={handleAutoDock}
+          disabled={distToMarina < 50}
+          className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${
+            isAutoDocking
+              ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
+              : distToMarina < 50
+              ? 'bg-green-600 text-white cursor-default'
+              : 'bg-cyan-600 hover:bg-cyan-700 text-white'
+          }`}
+        >
+          {isAutoDocking ? (
+            <>⏹️ Cancel Auto-Dock ({distToMarina.toFixed(0)}m)</>
+          ) : distToMarina < 50 ? (
+            <>✓ At Marina</>
+          ) : (
+            <>⚓ Return to Dock ({distToMarina.toFixed(0)}m)</>
+          )}
+        </button>
       </div>
 
       {/* Keyboard Controls Info */}

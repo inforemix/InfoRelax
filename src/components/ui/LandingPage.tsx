@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLandingStore, MAP_PRESETS } from '../../state/useLandingStore'
 import { useWorldStore } from '../../state/useWorldStore'
+import { WorldDifficulty } from '../../world/WorldGenerator'
 
 export function LandingPage() {
   const { selectedMap, playerName, setPlayerName, selectMap, startGame } = useLandingStore()
@@ -15,8 +16,8 @@ export function LandingPage() {
     // Update player name
     setPlayerName(nameInput || 'Navigator')
 
-    // Initialize world with selected map
-    initializeWorld(selectedMap.seed, selectedMap.worldSize)
+    // Initialize world with selected map and difficulty
+    initializeWorld(selectedMap.seed, selectedMap.worldSize, selectedMap.difficulty as WorldDifficulty)
 
     // Start the game
     startGame()

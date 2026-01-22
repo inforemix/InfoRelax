@@ -132,6 +132,7 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
 // Gerstner wave ocean with realistic rolling waves
 export function GerstnerOcean({ size = 500, segments = 256 }: OceanProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null)
+  const { player } = useGameStore()
 
   // Leva controls for wave tuning
   const { waveHeight, waveSpeed, choppiness, windDirection } = useControls('Gerstner Ocean', {
@@ -281,11 +282,13 @@ export function GerstnerOcean({ size = 500, segments = 256 }: OceanProps) {
         }
       `,
       transparent: true,
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
+      depthWrite: true,
+      depthTest: true,
     })
   }, [])
 
-  // Animate the water
+  // Animate the water and follow player
   useFrame((state) => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = state.clock.elapsedTime * waveSpeed
@@ -296,7 +299,11 @@ export function GerstnerOcean({ size = 500, segments = 256 }: OceanProps) {
   })
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[player.position[0], -0.5, player.position[2]]}
+      receiveShadow
+    >
       <planeGeometry args={[size, size, segments, segments]} />
       <primitive object={shaderMaterial} attach="material" ref={materialRef} />
     </mesh>
@@ -306,6 +313,7 @@ export function GerstnerOcean({ size = 500, segments = 256 }: OceanProps) {
 // Alternative simpler water for lower-end devices
 export function SimpleOcean({ size = 500, segments = 128 }: OceanProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null)
+  const { player } = useGameStore()
 
   // Leva controls for wave tuning
   const { waveHeight, waveFrequency, waveSpeed } = useControls('Simple Ocean', {
@@ -468,11 +476,13 @@ export function SimpleOcean({ size = 500, segments = 128 }: OceanProps) {
         }
       `,
       transparent: true,
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
+      depthWrite: true,
+      depthTest: true,
     })
   }, [])
 
-  // Animate the water
+  // Animate the water and follow player
   useFrame((state) => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = state.clock.elapsedTime * waveSpeed
@@ -482,7 +492,11 @@ export function SimpleOcean({ size = 500, segments = 128 }: OceanProps) {
   })
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[player.position[0], -0.5, player.position[2]]}
+      receiveShadow
+    >
       <planeGeometry args={[size, size, segments, segments]} />
       <primitive object={shaderMaterial} attach="material" ref={materialRef} />
     </mesh>
