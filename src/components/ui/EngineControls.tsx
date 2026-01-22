@@ -7,7 +7,7 @@ import { useWorldStore } from '../../state/useWorldStore'
  * Displays real-time engine metrics and allows manual throttle control
  */
 export function EngineControls() {
-  const { player, energy, setThrottle, isAutoDocking, setAutoDock } = useGameStore()
+  const { player, energy, setThrottle, isAutoDocking, setAutoDock, boatDamage, repairBoat, battery } = useGameStore()
   const { stats } = useYachtStore()
   const world = useWorldStore((state) => state.world)
 
@@ -194,7 +194,7 @@ export function EngineControls() {
       </div>
 
       {/* Auto-Dock Button */}
-      <div className="mb-3">
+      <div className="mb-2">
         <button
           onClick={handleAutoDock}
           disabled={distToMarina < 50}
@@ -215,6 +215,28 @@ export function EngineControls() {
           )}
         </button>
       </div>
+
+      {/* Repair Button */}
+      {boatDamage.hullIntegrity < 100 && (
+        <div className="mb-3">
+          <button
+            onClick={() => {
+              const success = repairBoat()
+              if (!success) {
+                alert('Not enough battery charge to repair! Need 20 kWh.')
+              }
+            }}
+            disabled={battery.currentCharge < 20}
+            className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${
+              battery.currentCharge >= 20
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            🔧 Repair Hull (20 kWh) - {boatDamage.hullIntegrity.toFixed(0)}%
+          </button>
+        </div>
+      )}
 
       {/* Keyboard Controls Info */}
       <div className="text-[10px] text-slate-400 bg-slate-800/50 rounded p-2 space-y-1">

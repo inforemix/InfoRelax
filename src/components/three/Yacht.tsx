@@ -19,7 +19,7 @@ export function Yacht() {
   const { hull, turbine } = currentYacht
 
   // Get game state
-  const { wind, player, tick, setThrottle, setSteering, updateCheckpointDetection } = useGameStore()
+  const { wind, player, tick, setThrottle, setSteering, updateCheckpointDetection, activateBurst } = useGameStore()
 
   // Get race state
   const { isRacing, currentRace, passCheckpoint, currentCheckpoint } = useRaceStore()
@@ -57,6 +57,13 @@ export function Yacht() {
     setThrottle(throttle)
     setSteering(steering)
   }, [keys.forward, keys.backward, keys.left, keys.right, player.throttle, setThrottle, setSteering])
+
+  // Handle burst key press
+  useEffect(() => {
+    if (keys.burst) {
+      activateBurst()
+    }
+  }, [keys.burst, activateBurst])
 
   // Animate the yacht and run game tick
   useFrame((state, delta) => {

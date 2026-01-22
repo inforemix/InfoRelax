@@ -71,5 +71,11 @@ export const useLandingStore = create<LandingState>((set) => ({
 
   resetToLanding: () => {
     set({ gameStarted: false, selectedMap: null })
+    // Reset game state when returning to landing
+    const { useGameStore } = require('./useGameStore')
+    const gameStore = useGameStore.getState()
+    if (gameStore.resetGameState) {
+      gameStore.resetGameState()
+    }
   },
 }))

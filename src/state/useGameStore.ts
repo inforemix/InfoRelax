@@ -76,6 +76,11 @@ interface GameState {
   isAutoDocking: boolean
   autoDockTarget: [number, number] | null
 
+  // Burst speed
+  isBursting: boolean
+  burstCooldown: number  // seconds
+  burstEnergyCost: number  // kW during burst
+
   // Actions
   setTimeOfDay: (time: number) => void
   setWeather: (weather: Weather) => void
@@ -90,8 +95,10 @@ interface GameState {
   updateCheckpointDetection: (checkpoints: any[]) => void
   tick: (delta: number, maxSpeed?: number, turnRate?: number) => void
   handleCollision: (icebergId: string, penetration: number, normalX: number, normalZ: number, icebergRadius: number) => void
-  repairBoat: () => void
+  repairBoat: () => boolean
   setAutoDock: (enabled: boolean, target?: [number, number]) => void
+  resetGameState: () => void
+  activateBurst: () => void
 }
 
 // Use weather presets from WindSystem (re-export for compatibility)
@@ -124,8 +131,8 @@ export const useGameStore = create<GameState>()(
     energyCredits: 0,
 
     battery: {
-      currentCharge: 75,  // kWh stored (starts at 75% of 100 kWh)
-      chargePercent: 75,  // 0-100%
+      currentCharge: 50,  // kWh stored (starts at 50% of 100 kWh)
+      chargePercent: 50,  // 0-100%
       capacity: 100,      // kWh total
     },
 
@@ -152,6 +159,11 @@ export const useGameStore = create<GameState>()(
     // Auto-dock
     isAutoDocking: false,
     autoDockTarget: null,
+
+    // Burst speed
+    isBursting: false,
+    burstCooldown: 0,
+    burstEnergyCost: 25,  // 25 kW burst consumption
 
     // Actions
     setTimeOfDay: (time) => {
@@ -249,6 +261,12 @@ export const useGameStore = create<GameState>()(
     updatePlayerPosition: (delta, maxSpeed, turnRate) => {
       const gameState = get()
 
+      // Get engine tier from yacht store to adjust max speed
+      const { useYachtStore } = require('./useYachtStore')
+      const yachtStore = useYachtStore.getState()
+      const engineMultiplier = yachtStore.currentYacht.engine?.powerMultiplier || 1
+      const adjustedMaxSpeed = maxSpeed * engineMultiplier
+
       // Handle auto-dock navigation
       if (gameState.isAutoDocking && gameState.autoDockTarget) {
         const target = gameState.autoDockTarget
@@ -293,18 +311,21 @@ export const useGameStore = create<GameState>()(
       set((state) => {
         const { player } = state
 
+        // Apply burst speed boost (50% increase)
+        const burstMultiplier = state.isBursting ? 1.5 : 1.0
+
         // Calculate current speed based on throttle (knots to m/s: 1 knot ≈ 0.514 m/s)
-        const targetSpeed = (player.throttle / 100) * maxSpeed
+        const targetSpeed = (player.throttle / 100) * adjustedMaxSpeed * burstMultiplier
 
         // Realistic acceleration with force and drag
         // More thrust at low speeds (easier to accelerate), more drag at high speeds
-        const speedRatio = Math.abs(player.speed) / maxSpeed
+        const speedRatio = Math.abs(player.speed) / adjustedMaxSpeed
         const dragFactor = 1 + speedRatio * speedRatio * 2 // Quadratic drag
         const thrustFactor = Math.max(0.2, 1 - speedRatio * 0.5) // More effective thrust at low speeds
 
         // Acceleration rate: faster at low speeds, slower at high speeds
-        // With 300% more power, acceleration should be much quicker
-        const baseAcceleration = 6 // Increased from 2 to 6 (3x faster)
+        // Base acceleration scaled by engine multiplier
+        const baseAcceleration = 2 * engineMultiplier
         const accelerationRate = baseAcceleration * thrustFactor / dragFactor
 
         // Apply acceleration/deceleration
@@ -314,7 +335,7 @@ export const useGameStore = create<GameState>()(
 
         // Apply steering (only when moving)
         if (Math.abs(player.speed) > 0.1) {
-          const turnAmount = player.steering * turnRate * delta * (player.speed / maxSpeed)
+          const turnAmount = player.steering * turnRate * delta * (player.speed / adjustedMaxSpeed)
           player.rotation += turnAmount
         }
 
@@ -335,6 +356,10 @@ export const useGameStore = create<GameState>()(
     updateEnergy: (delta) => {
       const state = get()
       const { wind, weather, timeOfDay, player } = state
+      // Get engine tier from yacht store
+      const { useYachtStore } = require('./useYachtStore')
+      const yachtStore = useYachtStore.getState()
+      const engineMultiplier = yachtStore.currentYacht.engine?.powerMultiplier || 1
 
       // Calculate apparent wind for turbine
       const boatHeading = (player.rotation * 180) / Math.PI
@@ -365,9 +390,10 @@ export const useGameStore = create<GameState>()(
 
       const solarOutput = (irradiance * panelArea * SOLAR_PANEL_EFFICIENCY * 0.95) / 1000 // kW with inverter efficiency
 
-      // Motor consumption: based on throttle (max 15kW)
+      // Motor consumption: based on throttle and engine tier (base 15kW, scaled by tier)
       const motorEfficiency = 0.92
-      const maxMotorPower = 15
+      const baseMaxMotorPower = 15
+      const maxMotorPower = baseMaxMotorPower * engineMultiplier
       const motorConsumption = ((player.throttle / 100) * maxMotorPower) / motorEfficiency
 
       // Systems consumption
@@ -424,6 +450,22 @@ export const useGameStore = create<GameState>()(
 
         // Slowly drift wind direction
         state.wind.direction = (state.wind.direction + (Math.random() - 0.5) * 2 * delta) % 360
+
+        // Update burst cooldown
+        if (state.burstCooldown > 0) {
+          state.burstCooldown = Math.max(0, state.burstCooldown - delta)
+        }
+
+        // Drain battery during burst
+        if (state.isBursting) {
+          const burstEnergyDrain = state.burstEnergyCost * delta / 3600 // Convert kW to kWh
+          state.battery.currentCharge = Math.max(0, state.battery.currentCharge - burstEnergyDrain)
+          state.battery.chargePercent = (state.battery.currentCharge / state.battery.capacity) * 100
+          // Cancel burst if battery runs out
+          if (state.battery.chargePercent <= 0) {
+            state.isBursting = false
+          }
+        }
       })
 
       // Update energy calculations
@@ -480,23 +522,81 @@ export const useGameStore = create<GameState>()(
     },
 
     repairBoat: () => {
-      set((state) => {
-        state.boatDamage.hullIntegrity = 100
-        state.boatDamage.collisionCount = 0
-        state.boatDamage.lastCollisionTime = null
-        state.boatDamage.lastCollisionIcebergId = null
-      })
+      const state = get()
+      // Repair costs 20 kWh (20% of 100 kWh battery)
+      const repairCost = 20
+      if (state.battery.currentCharge >= repairCost) {
+        set((s) => {
+          // Deduct repair cost from battery
+          s.battery.currentCharge -= repairCost
+          s.battery.chargePercent = (s.battery.currentCharge / s.battery.capacity) * 100
+
+          // Restore hull integrity
+          s.boatDamage.hullIntegrity = 100
+          s.boatDamage.collisionCount = 0
+          s.boatDamage.lastCollisionTime = null
+          s.boatDamage.lastCollisionIcebergId = null
+        })
+        return true
+      }
+      return false // Not enough battery
     },
 
     setAutoDock: (enabled, target) => {
       set((state) => {
         state.isAutoDocking = enabled
         state.autoDockTarget = enabled && target ? target : null
-        // When auto-dock is enabled, set a moderate throttle
+        // When auto-dock is enabled, set full throttle to return quickly
         if (enabled) {
-          state.player.throttle = 50
+          state.player.throttle = 100
         }
       })
+    },
+
+    resetGameState: () => {
+      set((state) => {
+        // Reset battery to 50%
+        state.battery.currentCharge = 50
+        state.battery.chargePercent = 50
+
+        // Reset boat damage
+        state.boatDamage.hullIntegrity = 100
+        state.boatDamage.collisionCount = 0
+        state.boatDamage.lastCollisionTime = null
+        state.boatDamage.lastCollisionIcebergId = null
+
+        // Reset player position to spawn
+        state.player.position = [0, 0, 150]
+        state.player.rotation = 0
+        state.player.speed = 0
+        state.player.throttle = 0
+        state.player.steering = 0
+
+        // Reset auto-dock
+        state.isAutoDocking = false
+        state.autoDockTarget = null
+
+        // Reset burst
+        state.isBursting = false
+        state.burstCooldown = 0
+      })
+    },
+
+    activateBurst: () => {
+      const state = get()
+      // Only activate if not on cooldown and has enough battery
+      if (state.burstCooldown <= 0 && state.battery.chargePercent > 10) {
+        set((s) => {
+          s.isBursting = true
+          s.burstCooldown = 5  // 5 second cooldown
+        })
+        // Burst lasts for 2 seconds
+        setTimeout(() => {
+          set((s) => {
+            s.isBursting = false
+          })
+        }, 2000)
+      }
     },
   }))
 )

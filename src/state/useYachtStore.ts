@@ -70,6 +70,16 @@ export interface BatteryConfig {
   currentCharge: number  // 0-100%
 }
 
+// Engine tier
+export type EngineTier = 'standard' | 'performance' | 'racing'
+
+// Engine configuration
+export interface EngineConfig {
+  tier: EngineTier
+  powerMultiplier: number  // 1x, 2x, 3x
+  maxSpeed: number        // knots
+}
+
 // Full yacht configuration
 export interface YachtConfig {
   id: string
@@ -78,6 +88,7 @@ export interface YachtConfig {
   turbine: TurbineConfig
   solar: SolarConfig
   battery: BatteryConfig
+  engine: EngineConfig
   deckModules: string[]  // ['dj-booth', 'cargo', etc.]
 }
 
@@ -121,8 +132,8 @@ const defaultYacht: YachtConfig = {
   },
   turbine: {
     style: 'ribbon',
-    height: 7,
-    diameter: 4,
+    height: 6,
+    diameter: 5,
     bladeCount: 5,
     bladeProfile: [],
     material: 'solar',
@@ -145,7 +156,12 @@ const defaultYacht: YachtConfig = {
   },
   battery: {
     capacity: 100,
-    currentCharge: 75,
+    currentCharge: 50,
+  },
+  engine: {
+    tier: 'standard',
+    powerMultiplier: 1,
+    maxSpeed: 15,
   },
   deckModules: [],
 }
@@ -169,6 +185,7 @@ interface YachtState {
   setTurbine: (turbine: Partial<TurbineConfig>) => void
   setSolar: (solar: Partial<SolarConfig>) => void
   setBattery: (battery: Partial<BatteryConfig>) => void
+  setEngine: (tier: EngineTier) => void
   setBladeProfile: (points: BladePoint[]) => void
   setProceduralHullConfig: (config: ProceduralHullConfig | null) => void
   addDeckModule: (module: string) => void
@@ -213,10 +230,11 @@ function calculateStats(yacht: YachtConfig): YachtStats {
     foilTakeoffSpeed = foilTakeoffMs * 1.944 // Convert to knots
   }
 
-  // Max speed based on drag and available power (300% boost)
+  // Max speed based on drag and available power, scaled by engine tier
   // Simplified: lower drag = higher speed potential
   const dragCoefficient = dragResult.totalDrag / (0.5 * WATER_DENSITY * testSpeed * testSpeed * hull.beam * hull.draft)
-  const maxSpeed = Math.min(120, hullSpeed * (1.5 - dragCoefficient)) * (hull.type === 'hydrofoil' ? 1.8 : 1) * 4 // 4x power = 4x speed potential
+  const baseMaxSpeed = Math.min(120, hullSpeed * (1.5 - dragCoefficient)) * (hull.type === 'hydrofoil' ? 1.8 : 1)
+  const maxSpeed = baseMaxSpeed * yacht.engine.powerMultiplier
 
   // Stability score (0-100)
   const stability = stabilityResult.stabilityIndex
@@ -291,7 +309,22 @@ export const useYachtStore = create<YachtState>()(
       })
       get().recalculateStats()
     },
-    
+
+    setEngine: (tier) => {
+      const tierConfig = {
+        standard: { powerMultiplier: 1, maxSpeed: 15 },
+        performance: { powerMultiplier: 2, maxSpeed: 30 },
+        racing: { powerMultiplier: 3, maxSpeed: 45 },
+      }
+      set((state) => {
+        state.currentYacht.engine = {
+          tier,
+          ...tierConfig[tier],
+        }
+      })
+      get().recalculateStats()
+    },
+
     setBladeProfile: (points) => {
       set((state) => {
         state.currentYacht.turbine.bladeProfile = points
