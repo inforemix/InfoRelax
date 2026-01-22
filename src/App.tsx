@@ -20,6 +20,7 @@ import { EnhancedSky } from './components/three/EnhancedSky'
 import { GlacierEnvironment } from './components/three/GlacierEnvironment'
 import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
+import { EnvironmentToggle } from './components/ui/EnvironmentToggle'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 import { LandingPage } from './components/ui/LandingPage'
@@ -36,13 +37,12 @@ import { useWorldIntegration } from './hooks/useWorldIntegration'
 import { useIcebergCollision } from './hooks/useIcebergCollision'
 
 export default function App() {
-  const { gameMode, setGameMode } = useGameStore()
+  const { gameMode, setGameMode, environmentType } = useGameStore()
   const currentRace = useRaceStore((state) => state.currentRace)
   const gameStarted = useLandingStore((state) => state.gameStarted)
-  const selectedMap = useLandingStore((state) => state.selectedMap)
 
   // Check if we're using the glacier environment
-  const isGlacierEnvironment = selectedMap?.environment === 'glacier'
+  const isGlacierEnvironment = environmentType === 'glacier-360'
 
   // Initialize world on mount - only if game has started
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function App() {
             <>
               {/* Glacier Environment with 360 panorama and arctic water */}
               <GlacierEnvironment
-                panoramaUrl={selectedMap?.panoramaUrl || '/assets/glaciers.png'}
+                panoramaUrl="/assets/glaciers.png"
                 waterLevel={-0.5}
                 waterSize={10000}
               />
@@ -180,6 +180,9 @@ export default function App() {
 
         {/* Engine Controls (Thrust & Throttle) */}
         {gameMode === 'sail' && <EngineControls />}
+
+        {/* Environment Toggle */}
+        {gameMode === 'sail' && <EnvironmentToggle />}
       </Suspense>
     </div>
   )
