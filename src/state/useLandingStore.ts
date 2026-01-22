@@ -8,6 +8,8 @@ export interface MapPreset {
   worldSize: number
   difficulty: 'peaceful' | 'moderate' | 'challenging' | 'extreme'
   features: string[]
+  environment?: 'default' | 'glacier'  // Environment type for rendering
+  panoramaUrl?: string  // Optional 360 panorama image for glacier environment
 }
 
 export interface LandingState {
@@ -49,6 +51,17 @@ export const MAP_PRESETS: Record<string, MapPreset> = {
     worldSize: 12000,
     difficulty: 'challenging',
     features: ['Storm paths', 'Fast winds', 'Scattered islands', 'High rewards'],
+  },
+  'arctic-glaciers': {
+    id: 'arctic-glaciers',
+    name: 'Arctic Glaciers',
+    description: 'Navigate through icy waters with stunning 360° glacier panorama',
+    seed: 789,
+    worldSize: 10000,
+    difficulty: 'challenging',
+    features: ['360° panorama', 'Arctic water', 'Icebergs', 'Glacial scenery'],
+    environment: 'glacier',
+    panoramaUrl: '/assets/glaciers.png',
   },
 }
 
