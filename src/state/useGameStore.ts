@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { calculateApparentWind, WEATHER_PRESETS } from '../physics/WindSystem'
 import { getSolarMultiplier, getCloudMultiplier, SOLAR_CONSTANT, SOLAR_PANEL_EFFICIENCY } from '../physics/EnergySystem'
+import { useYachtStore } from './useYachtStore'
 
 export type Weather = 'clear' | 'cloudy' | 'trade-winds' | 'storm' | 'doldrums'
 export type CameraMode = 'third-person' | 'first-person'
@@ -262,7 +263,6 @@ export const useGameStore = create<GameState>()(
       const gameState = get()
 
       // Get engine tier from yacht store to adjust max speed
-      const { useYachtStore } = require('./useYachtStore')
       const yachtStore = useYachtStore.getState()
       const engineMultiplier = yachtStore.currentYacht.engine?.powerMultiplier || 1
       const adjustedMaxSpeed = maxSpeed * engineMultiplier
@@ -357,7 +357,6 @@ export const useGameStore = create<GameState>()(
       const state = get()
       const { wind, weather, timeOfDay, player } = state
       // Get engine tier from yacht store
-      const { useYachtStore } = require('./useYachtStore')
       const yachtStore = useYachtStore.getState()
       const engineMultiplier = yachtStore.currentYacht.engine?.powerMultiplier || 1
 
