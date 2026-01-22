@@ -3,17 +3,14 @@ import { useGameStore } from '../../state/useGameStore'
 import { useYachtStore } from '../../state/useYachtStore'
 import { useWorldStore } from '../../state/useWorldStore'
 
-type DashboardTab = 'status' | 'engine' | 'energy' | 'navigation'
-
 /**
- * Unified Dashboard Component
- * Consolidates HUD, Engine Controls, and other UI elements into organized tabs
+ * Unified Dashboard Component - Glassmorphism Design
+ * Shows all stats at once with transparent blur background
  */
 export function Dashboard() {
-  const [activeTab, setActiveTab] = useState<DashboardTab>('status')
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false)
 
-  const { player, energy, battery, boatDamage, wind, timeOfDay, setThrottle, isAutoDocking, setAutoDock, repairBoat, isBursting, burstCooldown } = useGameStore()
+  const { player, energy, battery, boatDamage, wind, setThrottle, isAutoDocking, setAutoDock, repairBoat, isBursting, burstCooldown } = useGameStore()
   const { stats, currentYacht } = useYachtStore()
   const world = useWorldStore((state) => state.world)
 
@@ -36,95 +33,167 @@ export function Dashboard() {
   const thrustPercentage = (player.throttle / 100) * Math.min(1, player.speed / stats.maxSpeed * 2)
   const motorPowerKW = energy.motorConsumption
 
-  const tabs = [
-    { id: 'status' as const, label: 'Status', icon: '📊' },
-    { id: 'engine' as const, label: 'Engine', icon: '⚙️' },
-    { id: 'energy' as const, label: 'Energy', icon: '⚡' },
-  ]
-
-  if (isCollapsed) {
+  if (isMinimized) {
     return (
       <div className="fixed bottom-4 left-4 z-50">
         <button
-          onClick={() => setIsCollapsed(false)}
-          className="px-4 py-3 bg-slate-900/95 border-2 border-cyan-500/50 rounded-lg text-cyan-400 hover:bg-slate-800 transition-all shadow-lg"
+          onClick={() => setIsMinimized(false)}
+          className="px-4 py-3 bg-slate-900/60 backdrop-blur-md border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-slate-800/60 transition-all shadow-lg hover:shadow-cyan-500/20"
         >
-          📊 Show Dashboard
+          📊 Dashboard
         </button>
       </div>
     )
   }
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 w-[420px]">
-      <div className="bg-slate-900/95 border-2 border-cyan-500/50 rounded-lg shadow-2xl overflow-hidden">
-        {/* Header with Tabs */}
-        <div className="flex items-center justify-between bg-slate-800/80 px-4 py-2 border-b border-cyan-500/30">
-          <div className="flex gap-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-cyan-500 text-white'
-                    : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-700/50'
-                }`}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setIsCollapsed(true)}
-            className="text-slate-400 hover:text-cyan-400 text-xs transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Content Area */}
-        <div className="p-4 max-h-[500px] overflow-y-auto">
-          {/* STATUS TAB */}
-          {activeTab === 'status' && (
-            <div className="space-y-4">
-              {/* Speed & Position */}
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Speed" value={`${player.speed.toFixed(1)} kt`} color="cyan" />
-                <StatCard label="Max Speed" value={`${stats.maxSpeed.toFixed(1)} kt`} color="purple" />
+    <div className="fixed bottom-4 left-4 right-4 z-50 pointer-events-none">
+      <div className="max-w-[1400px] mx-auto pointer-events-auto">
+        {/* Glassmorphism Container */}
+        <div className="bg-slate-900/40 backdrop-blur-md border border-cyan-500/20 rounded-2xl shadow-2xl p-4">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-cyan-400 font-bold text-sm tracking-wide">⚓ DASHBOARD</h2>
+              <div className="h-4 w-px bg-cyan-500/30" />
+              <div className="text-xs text-slate-400">
+                <span className="text-cyan-400 font-semibold">{player.speed.toFixed(1)}</span> kt •
+                <span className="text-purple-400 font-semibold ml-1">{stats.maxSpeed.toFixed(1)}</span> kt max
               </div>
+            </div>
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-slate-400 hover:text-cyan-400 text-xs transition-colors px-2 py-1 rounded hover:bg-slate-800/50"
+            >
+              Minimize ▼
+            </button>
+          </div>
 
-              {/* Wind Info */}
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <div className="text-xs text-slate-400 mb-2">Wind Conditions</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <div className="text-[10px] text-slate-500">Direction</div>
-                    <div className="text-sm text-cyan-400 font-bold">{wind.direction.toFixed(0)}°</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500">Speed</div>
-                    <div className="text-sm text-cyan-400 font-bold">{wind.speed.toFixed(1)} m/s</div>
+          {/* Main Stats Grid - 4 columns */}
+          <div className="grid grid-cols-4 gap-4">
+            {/* Column 1: Performance */}
+            <div className="space-y-3">
+              <div className="text-[10px] text-cyan-400 font-semibold mb-2 uppercase tracking-wider">Performance</div>
+
+              {/* Speed */}
+              <GlassCard>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-400">Speed</span>
+                  <span className="text-lg font-bold text-cyan-400">{player.speed.toFixed(1)}</span>
+                </div>
+                <div className="text-[9px] text-slate-500">knots</div>
+              </GlassCard>
+
+              {/* Throttle */}
+              <GlassCard>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs text-slate-400">Throttle</span>
+                  <span className="text-sm font-bold text-cyan-400">{player.throttle.toFixed(0)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={player.throttle}
+                  onChange={(e) => setThrottle(parseFloat(e.target.value))}
+                  className="w-full h-1.5 bg-slate-700/50 rounded appearance-none cursor-pointer accent-cyan-500"
+                />
+              </GlassCard>
+
+              {/* Thrust */}
+              <GlassCard>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs text-slate-400">Thrust</span>
+                  <span className="text-sm font-bold text-green-400">{(thrustPercentage * 100).toFixed(0)}%</span>
+                </div>
+                <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-500 to-cyan-500 transition-all duration-300"
+                    style={{ width: `${thrustPercentage * 100}%` }}
+                  />
+                </div>
+              </GlassCard>
+
+              {/* Wind */}
+              <GlassCard>
+                <div className="text-xs text-slate-400 mb-1">Wind</div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-cyan-400">{wind.direction.toFixed(0)}°</span>
+                  <span className="text-cyan-400">{wind.speed.toFixed(1)} m/s</span>
+                </div>
+              </GlassCard>
+            </div>
+
+            {/* Column 2: Energy */}
+            <div className="space-y-3">
+              <div className="text-[10px] text-yellow-400 font-semibold mb-2 uppercase tracking-wider">Energy</div>
+
+              {/* Battery */}
+              <GlassCard highlight={battery.chargePercent < 20}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs text-slate-400">Battery</span>
+                  <span className={`text-sm font-bold ${
+                    battery.chargePercent > 50 ? 'text-green-400' :
+                    battery.chargePercent > 20 ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    {battery.chargePercent.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      battery.chargePercent > 50 ? 'bg-green-500' :
+                      battery.chargePercent > 20 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${battery.chargePercent}%` }}
+                  />
+                </div>
+                <div className="text-[9px] text-slate-500 mt-1">
+                  {battery.currentCharge.toFixed(1)} / {battery.capacity} kWh
+                </div>
+              </GlassCard>
+
+              {/* Power Flow */}
+              <GlassCard>
+                <div className="space-y-1">
+                  <PowerStat label="Turbine" value={energy.turbineOutput} positive />
+                  <PowerStat label="Solar" value={energy.solarOutput} positive />
+                  <PowerStat label="Motor" value={energy.motorConsumption} />
+                  <div className="pt-1 border-t border-slate-700/50 mt-1">
+                    <PowerStat label="Net" value={energy.netPower} positive={energy.netPower >= 0} bold />
                   </div>
                 </div>
-              </div>
+              </GlassCard>
+
+              {/* Engine Tier */}
+              <GlassCard>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-400">Engine</span>
+                  <span className="text-xs font-bold text-purple-400 uppercase">{currentYacht.engine.tier}</span>
+                </div>
+                <div className="text-[9px] text-slate-500">{currentYacht.engine.powerMultiplier}x power</div>
+              </GlassCard>
+            </div>
+
+            {/* Column 3: Status */}
+            <div className="space-y-3">
+              <div className="text-[10px] text-green-400 font-semibold mb-2 uppercase tracking-wider">Status</div>
 
               {/* Hull Integrity */}
-              <div className={`bg-slate-800/50 rounded-lg p-3 ${
-                boatDamage.hullIntegrity < 50 ? 'border border-red-500/50' : ''
-              }`}>
+              <GlassCard highlight={boatDamage.hullIntegrity < 50}>
                 <div className="flex justify-between items-center mb-2">
-                  <div className="text-xs text-slate-400">
-                    Hull Integrity {boatDamage.hullIntegrity < 50 && '⚠️'}
-                  </div>
-                  <div className={`text-sm font-bold ${
+                  <span className="text-xs text-slate-400">
+                    Hull {boatDamage.hullIntegrity < 50 && '⚠️'}
+                  </span>
+                  <span className={`text-sm font-bold ${
                     boatDamage.hullIntegrity > 50 ? 'text-green-400' :
                     boatDamage.hullIntegrity > 20 ? 'text-yellow-400' : 'text-red-400'
                   }`}>
                     {boatDamage.hullIntegrity.toFixed(0)}%
-                  </div>
+                  </span>
                 </div>
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all duration-300 ${
                       boatDamage.hullIntegrity > 50 ? 'bg-green-500' :
@@ -134,24 +203,24 @@ export function Dashboard() {
                   />
                 </div>
                 {boatDamage.collisionCount > 0 && (
-                  <div className="text-xs text-red-400 mt-2">
-                    💥 Collisions: {boatDamage.collisionCount}
+                  <div className="text-[9px] text-red-400 mt-1">
+                    💥 {boatDamage.collisionCount} collision{boatDamage.collisionCount > 1 ? 's' : ''}
                   </div>
                 )}
-              </div>
+              </GlassCard>
 
-              {/* Burst Speed Indicator */}
+              {/* Burst Speed */}
               {(isBursting || burstCooldown > 0) && (
-                <div className="bg-orange-900/30 border border-orange-500/50 rounded-lg p-3">
+                <GlassCard highlight={isBursting}>
                   <div className="flex justify-between items-center mb-2">
-                    <div className="text-xs text-orange-400">Burst Speed</div>
-                    <div className={`text-sm font-bold ${
+                    <span className="text-xs text-slate-400">Burst</span>
+                    <span className={`text-sm font-bold ${
                       isBursting ? 'text-orange-400 animate-pulse' : 'text-cyan-400'
                     }`}>
                       {isBursting ? 'ACTIVE!' : `${burstCooldown.toFixed(1)}s`}
-                    </div>
+                    </span>
                   </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${
                         isBursting ? 'bg-orange-500 animate-pulse' : 'bg-cyan-500'
@@ -159,154 +228,85 @@ export function Dashboard() {
                       style={{ width: `${isBursting ? 100 : (1 - burstCooldown / 5) * 100}%` }}
                     />
                   </div>
-                </div>
+                </GlassCard>
               )}
-            </div>
-          )}
 
-          {/* ENGINE TAB */}
-          {activeTab === 'engine' && (
-            <div className="space-y-4">
-              {/* Throttle Control */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-slate-300 text-xs font-medium">Throttle</label>
-                  <span className="text-cyan-400 font-bold text-sm">{player.throttle.toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={player.throttle}
-                  onChange={(e) => setThrottle(parseFloat(e.target.value))}
-                  className="w-full h-3 bg-slate-700 rounded appearance-none cursor-pointer accent-cyan-500"
-                />
-                <div className="grid grid-cols-5 gap-1 mt-2">
-                  {[0, 25, 50, 75, 100].map((val) => (
-                    <button
-                      key={val}
-                      onClick={() => setThrottle(val)}
-                      className="text-[10px] py-1 bg-slate-700 hover:bg-cyan-600 text-slate-300 hover:text-white rounded transition-colors"
-                    >
-                      {val}%
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Thrust Output */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-slate-300 text-xs font-medium">Thrust Output</label>
-                  <span className="text-green-400 font-bold text-sm">{(thrustPercentage * 100).toFixed(0)}%</span>
-                </div>
-                <div className="relative h-8 bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
-                  <div
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-cyan-500 transition-all duration-300"
-                    style={{ width: `${thrustPercentage * 100}%` }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white text-xs font-bold drop-shadow-lg">
-                      {(thrustPercentage * 100).toFixed(0)}% THRUST
-                    </span>
+              {/* Stats */}
+              <GlassCard>
+                <div className="space-y-1 text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Max Speed</span>
+                    <span className="text-purple-400 font-semibold">{stats.maxSpeed.toFixed(1)} kt</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Efficiency</span>
+                    <span className="text-green-400 font-semibold">{(stats.turbineEfficiency * 100).toFixed(0)}%</span>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
+            </div>
 
-              {/* Engine Stats */}
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard label="Motor Draw" value={`${motorPowerKW.toFixed(1)} kW`} color="red" />
-                <StatCard label="Engine Tier" value={currentYacht.engine.tier.toUpperCase()} color="purple" />
-              </div>
+            {/* Column 4: Controls */}
+            <div className="space-y-3">
+              <div className="text-[10px] text-orange-400 font-semibold mb-2 uppercase tracking-wider">Controls</div>
 
-              {/* Auto-Dock & Repair */}
-              <div className="space-y-2">
+              {/* Auto-Dock */}
+              <button
+                onClick={handleAutoDock}
+                disabled={distToMarina < 50}
+                className={`w-full py-2.5 rounded-lg font-bold text-xs transition-all backdrop-blur-sm ${
+                  isAutoDocking
+                    ? 'bg-orange-500/80 hover:bg-orange-600/80 text-white animate-pulse border border-orange-400/50'
+                    : distToMarina < 50
+                    ? 'bg-green-600/80 text-white border border-green-400/50'
+                    : 'bg-cyan-600/80 hover:bg-cyan-700/80 text-white border border-cyan-400/50'
+                }`}
+              >
+                {isAutoDocking ? (
+                  <>⏹️ Cancel Auto-Dock</>
+                ) : distToMarina < 50 ? (
+                  <>✓ At Marina</>
+                ) : (
+                  <>⚓ Dock ({distToMarina.toFixed(0)}m)</>
+                )}
+              </button>
+
+              {/* Repair */}
+              {boatDamage.hullIntegrity < 100 && (
                 <button
-                  onClick={handleAutoDock}
-                  disabled={distToMarina < 50}
-                  className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${
-                    isAutoDocking
-                      ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
-                      : distToMarina < 50
-                      ? 'bg-green-600 text-white'
-                      : 'bg-cyan-600 hover:bg-cyan-700 text-white'
+                  onClick={() => {
+                    const success = repairBoat()
+                    if (!success) alert('Need 20 kWh to repair!')
+                  }}
+                  disabled={battery.currentCharge < 20}
+                  className={`w-full py-2.5 rounded-lg font-bold text-xs transition-all backdrop-blur-sm border ${
+                    battery.currentCharge >= 20
+                      ? 'bg-green-600/80 hover:bg-green-700/80 text-white border-green-400/50'
+                      : 'bg-gray-600/50 text-gray-400 cursor-not-allowed border-gray-600/30'
                   }`}
                 >
-                  {isAutoDocking ? '⏹️ Cancel Auto-Dock' : distToMarina < 50 ? '✓ At Marina' : `⚓ Return to Dock (${distToMarina.toFixed(0)}m)`}
+                  🔧 Repair (20 kWh)
                 </button>
+              )}
 
-                {boatDamage.hullIntegrity < 100 && (
-                  <button
-                    onClick={() => {
-                      const success = repairBoat()
-                      if (!success) alert('Not enough battery charge to repair! Need 20 kWh.')
-                    }}
-                    disabled={battery.currentCharge < 20}
-                    className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${
-                      battery.currentCharge >= 20
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    🔧 Repair Hull (20 kWh) - {boatDamage.hullIntegrity.toFixed(0)}%
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ENERGY TAB */}
-          {activeTab === 'energy' && (
-            <div className="space-y-4">
-              {/* Battery */}
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="text-xs text-slate-400">Battery Charge</div>
-                  <div className={`text-sm font-bold ${
-                    battery.chargePercent > 50 ? 'text-green-400' :
-                    battery.chargePercent > 20 ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
-                    {battery.chargePercent.toFixed(0)}%
+              {/* Keyboard Hints */}
+              <GlassCard>
+                <div className="text-[9px] text-slate-400 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">W/S</span>
+                    <span>Throttle</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">A/D</span>
+                    <span>Steer</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Tab/Space</span>
+                    <span>Burst</span>
                   </div>
                 </div>
-                <div className="h-3 bg-slate-700 rounded-full overflow-hidden mb-2">
-                  <div
-                    className={`h-full transition-all duration-300 ${
-                      battery.chargePercent > 50 ? 'bg-green-500' :
-                      battery.chargePercent > 20 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${battery.chargePercent}%` }}
-                  />
-                </div>
-                <div className="text-xs text-slate-500">
-                  {battery.currentCharge.toFixed(1)} / {battery.capacity} kWh
-                </div>
-              </div>
-
-              {/* Power Flow */}
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard label="Turbine" value={`+${energy.turbineOutput.toFixed(2)} kW`} color="green" />
-                <StatCard label="Solar" value={`+${energy.solarOutput.toFixed(2)} kW`} color="yellow" />
-                <StatCard label="Motor" value={`-${energy.motorConsumption.toFixed(2)} kW`} color="red" />
-                <StatCard label="Net Power" value={`${energy.netPower >= 0 ? '+' : ''}${energy.netPower.toFixed(2)} kW`} color={energy.netPower >= 0 ? 'green' : 'red'} />
-              </div>
-
-              {/* Turbine Efficiency */}
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <div className="text-xs text-slate-400 mb-2">Turbine Efficiency</div>
-                <div className="text-2xl font-bold text-cyan-400">{(stats.turbineEfficiency * 100).toFixed(0)}%</div>
-              </div>
+              </GlassCard>
             </div>
-          )}
-        </div>
-
-        {/* Footer with controls hint */}
-        <div className="bg-slate-800/80 px-4 py-2 border-t border-cyan-500/30">
-          <div className="text-[10px] text-slate-400 flex justify-between">
-            <span>W/S: Throttle</span>
-            <span>A/D: Steer</span>
-            <span>Tab/Space: Burst</span>
           </div>
         </div>
       </div>
@@ -314,22 +314,29 @@ export function Dashboard() {
   )
 }
 
-// Helper component for stat cards
-function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
-  const colorClasses = {
-    cyan: 'text-cyan-400',
-    green: 'text-green-400',
-    yellow: 'text-yellow-400',
-    red: 'text-red-400',
-    purple: 'text-purple-400',
-  }
+// Glass Card Component
+function GlassCard({ children, highlight = false }: { children: React.ReactNode; highlight?: boolean }) {
+  return (
+    <div className={`bg-slate-800/30 backdrop-blur-sm rounded-lg p-2.5 transition-all ${
+      highlight ? 'border border-orange-500/40 shadow-lg shadow-orange-500/10' : 'border border-slate-700/30'
+    }`}>
+      {children}
+    </div>
+  )
+}
+
+// Power Stat Component
+function PowerStat({ label, value, positive = false, bold = false }: { label: string; value: number; positive?: boolean; bold?: boolean }) {
+  const color = positive
+    ? (value > 0 ? 'text-green-400' : 'text-slate-500')
+    : 'text-red-400'
 
   return (
-    <div className="bg-slate-800/50 rounded p-2">
-      <div className="text-[10px] text-slate-400 mb-1">{label}</div>
-      <div className={`${colorClasses[color as keyof typeof colorClasses]} font-bold text-sm`}>
-        {value}
-      </div>
+    <div className="flex justify-between items-center">
+      <span className={`text-[10px] text-slate-500 ${bold ? 'font-semibold' : ''}`}>{label}</span>
+      <span className={`text-[10px] ${color} ${bold ? 'font-bold' : ''}`}>
+        {positive && value > 0 ? '+' : ''}{value.toFixed(2)} kW
+      </span>
     </div>
   )
 }

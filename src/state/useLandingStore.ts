@@ -56,7 +56,7 @@ export const MAP_PRESETS: Record<string, MapPreset> = {
 
 export const useLandingStore = create<LandingState>((set) => ({
   gameStarted: false,
-  selectedMap: null,
+  selectedMap: MAP_PRESETS['serene-archipelago'], // Auto-select the only available world
   playerName: 'Navigator',
 
   selectMap: (map: MapPreset) => {
