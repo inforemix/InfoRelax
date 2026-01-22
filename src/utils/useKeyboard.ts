@@ -6,6 +6,7 @@ interface KeyState {
   left: boolean     // A
   right: boolean    // D
   boost: boolean    // Shift
+  burst: boolean    // Tab or Space (one-shot burst)
   toggleCamera: boolean // V (press event only)
   resetCamera: boolean  // N (press event only)
   cameraPreset1: boolean // 1 (close-up view)
@@ -22,6 +23,7 @@ export function useKeyboard(): KeyState {
     left: false,
     right: false,
     boost: false,
+    burst: false,
     toggleCamera: false,
     resetCamera: false,
     cameraPreset1: false,
@@ -93,6 +95,13 @@ export function useKeyboard(): KeyState {
           // Camera preset 5: Distant view (50m behind, 20m above)
           setKeys((k) => ({ ...k, cameraPreset5: true }))
           setTimeout(() => setKeys((k) => ({ ...k, cameraPreset5: false })), 100)
+          break
+        case 'Tab':
+        case 'Space':
+          // Burst speed (one-shot)
+          e.preventDefault() // Prevent default tab/space behavior
+          setKeys((k) => ({ ...k, burst: true }))
+          setTimeout(() => setKeys((k) => ({ ...k, burst: false })), 100)
           break
       }
     }

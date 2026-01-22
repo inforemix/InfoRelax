@@ -250,8 +250,8 @@ export function BuildMode() {
               </div>
 
               <Section title="Turbine">
-                <Slider label="Height" value={turbine.height} min={5} max={15} step={0.5} unit="m" onChange={(v) => setTurbine({ height: v })} />
-                <Slider label="Diameter" value={turbine.diameter} min={1} max={4} step={0.5} unit="m" onChange={(v) => setTurbine({ diameter: v })} />
+                <Slider label="Height" value={turbine.height} min={5} max={12} step={0.5} unit="m" onChange={(v) => setTurbine({ height: v })} />
+                <Slider label="Diameter" value={turbine.diameter} min={1} max={8} step={0.5} unit="m" onChange={(v) => setTurbine({ diameter: v })} />
                 <div className="mb-2">
                   <span className="text-[10px] text-slate-500 block mb-1">Blades</span>
                   <div className="flex gap-1 flex-wrap">
@@ -654,6 +654,61 @@ export function BuildMode() {
                     <div>
                       <div className="text-[10px] font-bold text-green-400">{stats.solarOutput.toFixed(2)} kW</div>
                       <div className="text-[8px] text-slate-500">Peak Output</div>
+                    </div>
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="Engine Tier">
+                <div className="mb-2">
+                  <span className="text-[10px] text-slate-500 mb-2 block">Select motor power tier</span>
+                  <div className="space-y-2">
+                    {[
+                      { tier: 'standard' as const, label: 'Standard', power: '1x', speed: '15', consumption: '1x', color: 'bg-blue-500' },
+                      { tier: 'performance' as const, label: 'Performance', power: '2x', speed: '30', consumption: '2x', color: 'bg-purple-500' },
+                      { tier: 'racing' as const, label: 'Racing', power: '3x', speed: '45', consumption: '3x', color: 'bg-red-500' },
+                    ].map((option) => (
+                      <button
+                        key={option.tier}
+                        onClick={() => {
+                          const { setEngine } = useYachtStore.getState()
+                          setEngine(option.tier)
+                        }}
+                        className={`w-full p-2 rounded text-left transition-all ${
+                          currentYacht.engine.tier === option.tier
+                            ? `${option.color} text-white`
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-bold">{option.label}</span>
+                          <span className="text-[9px] opacity-80">Max {option.speed} kt</span>
+                        </div>
+                        <div className="text-[9px] opacity-80 mt-1">
+                          Power: {option.power} • Consumption: {option.consumption}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Engine Stats */}
+                <div className="mt-3 p-2 bg-slate-800/50 rounded">
+                  <div className="text-[9px] text-slate-400 mb-1">Engine Specs</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-orange-400">{currentYacht.engine.powerMultiplier}x</div>
+                      <div className="text-[8px] text-slate-500">Power Multiplier</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-cyan-400">{currentYacht.engine.maxSpeed} kt</div>
+                      <div className="text-[8px] text-slate-500">Top Speed</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-1">
+                    <div>
+                      <div className="text-[10px] font-bold text-red-400">{(15 * currentYacht.engine.powerMultiplier).toFixed(0)} kW</div>
+                      <div className="text-[8px] text-slate-500">Max Draw @ 100%</div>
                     </div>
                   </div>
                 </div>

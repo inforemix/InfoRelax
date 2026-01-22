@@ -13,14 +13,21 @@ export function LandingPage() {
   const handleStartGame = () => {
     if (!selectedMap) return
 
-    // Update player name
-    setPlayerName(nameInput || 'Navigator')
+    try {
+      // Update player name
+      setPlayerName(nameInput || 'Navigator')
 
-    // Initialize world with selected map and difficulty
-    initializeWorld(selectedMap.seed, selectedMap.worldSize, selectedMap.difficulty as WorldDifficulty)
+      // Initialize world with selected map and difficulty
+      console.log('Initializing world with:', selectedMap)
+      initializeWorld(selectedMap.seed, selectedMap.worldSize, selectedMap.difficulty as WorldDifficulty)
 
-    // Start the game
-    startGame()
+      // Start the game
+      console.log('Starting game...')
+      startGame()
+    } catch (error) {
+      console.error('Error starting game:', error)
+      alert('Error starting game. Please try again.')
+    }
   }
 
   const getDifficultyColor = (difficulty: string) => {
@@ -74,16 +81,29 @@ export function LandingPage() {
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-20">
           <div className="max-w-7xl mx-auto">
-            {/* Player Name Input */}
-            <div className="mb-12 max-w-md mx-auto">
+            {/* Player Name Input & Set Sail Button - Side by Side */}
+            <div className="mb-12 max-w-3xl mx-auto">
               <label className="block text-cyan-400 font-semibold mb-3">Captain's Name</label>
-              <input
-                type="text"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Enter your name..."
-                className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
-              />
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="Enter your name..."
+                  className="flex-1 px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                />
+                <button
+                  onClick={handleStartGame}
+                  disabled={!selectedMap}
+                  className={`px-8 py-3 rounded-lg font-bold text-lg transition-all transform whitespace-nowrap ${
+                    selectedMap
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/70 hover:scale-105 active:scale-95'
+                      : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  ⛵ SET SAIL
+                </button>
+              </div>
             </div>
 
             {/* Map Selection */}
@@ -205,29 +225,15 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Footer with Start Button */}
+        {/* Footer Info */}
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent pt-8 pb-8 px-6">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <div className="text-sm text-slate-400">
-              {selectedMap && (
-                <p>
-                  Sailing to <span className="text-cyan-400 font-semibold">{selectedMap.name}</span> as{' '}
-                  <span className="text-cyan-400 font-semibold">{nameInput || 'Navigator'}</span>
-                </p>
-              )}
-            </div>
-
-            <button
-              onClick={handleStartGame}
-              disabled={!selectedMap}
-              className={`px-8 py-3 rounded-lg font-bold text-lg transition-all transform ${
-                selectedMap
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/70 hover:scale-105 active:scale-95'
-                  : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-50'
-              }`}
-            >
-              {selectedMap ? '⛵ SET SAIL' : 'Select a World First'}
-            </button>
+          <div className="max-w-7xl mx-auto text-center">
+            {selectedMap && (
+              <p className="text-sm text-slate-400">
+                Ready to sail to <span className="text-cyan-400 font-semibold">{selectedMap.name}</span> as{' '}
+                <span className="text-cyan-400 font-semibold">{nameInput || 'Navigator'}</span>
+              </p>
+            )}
           </div>
         </div>
       </div>

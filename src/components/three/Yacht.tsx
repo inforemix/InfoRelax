@@ -19,7 +19,7 @@ export function Yacht() {
   const { hull, turbine } = currentYacht
 
   // Get game state
-  const { wind, player, tick, setThrottle, setSteering, updateCheckpointDetection } = useGameStore()
+  const { wind, player, tick, setThrottle, setSteering, updateCheckpointDetection, activateBurst } = useGameStore()
 
   // Get race state
   const { isRacing, currentRace, passCheckpoint, currentCheckpoint } = useRaceStore()
@@ -58,6 +58,13 @@ export function Yacht() {
     setSteering(steering)
   }, [keys.forward, keys.backward, keys.left, keys.right, player.throttle, setThrottle, setSteering])
 
+  // Handle burst key press
+  useEffect(() => {
+    if (keys.burst) {
+      activateBurst()
+    }
+  }, [keys.burst, activateBurst])
+
   // Animate the yacht and run game tick
   useFrame((state, delta) => {
     if (!groupRef.current) return
@@ -80,11 +87,13 @@ export function Yacht() {
     groupRef.current.position.y = Math.sin(time * bobSpeed) * bobAmount
 
     // Roll based on steering (lean into turns)
-    const targetRoll = -player.steering * 0.1 * (player.speed / stats.maxSpeed)
+    // Clamp speed ratio to prevent excessive tilting at high speeds
+    const speedRatio = Math.min(player.speed / 15, 1.0) // Normalize to base speed of 15 knots
+    const targetRoll = -player.steering * 0.08 * speedRatio // Reduced from 0.1 to 0.08 for smoother feel
     groupRef.current.rotation.z = THREE.MathUtils.lerp(
       groupRef.current.rotation.z,
       targetRoll + Math.sin(time * bobSpeed * 0.7) * 0.03,
-      0.1
+      0.15 // Increased from 0.1 for faster stabilization
     )
 
     // Gentle pitch

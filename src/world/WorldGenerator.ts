@@ -92,10 +92,10 @@ const DIFFICULTY_SETTINGS: Record<WorldDifficulty, {
   floatingIceMinRadius: number;
   floatingIceMaxRadius: number;
 }> = {
-  peaceful: { icebergCount: 12, minRadius: 12, maxRadius: 30, minHeight: 10, maxHeight: 25, minSpawnDist: 800, maxSpawnDist: 4000, floatingIceCount: 30, floatingIceMinRadius: 2, floatingIceMaxRadius: 6 },
-  moderate: { icebergCount: 35, minRadius: 15, maxRadius: 40, minHeight: 15, maxHeight: 35, minSpawnDist: 500, maxSpawnDist: 4500, floatingIceCount: 80, floatingIceMinRadius: 2, floatingIceMaxRadius: 8 },
-  challenging: { icebergCount: 60, minRadius: 20, maxRadius: 50, minHeight: 20, maxHeight: 45, minSpawnDist: 400, maxSpawnDist: 5000, floatingIceCount: 150, floatingIceMinRadius: 3, floatingIceMaxRadius: 10 },
-  extreme: { icebergCount: 100, minRadius: 25, maxRadius: 60, minHeight: 25, maxHeight: 55, minSpawnDist: 300, maxSpawnDist: 5000, floatingIceCount: 250, floatingIceMinRadius: 3, floatingIceMaxRadius: 12 },
+  peaceful: { icebergCount: 12, minRadius: 12, maxRadius: 30, minHeight: 10, maxHeight: 25, minSpawnDist: 800, maxSpawnDist: 4000, floatingIceCount: 100, floatingIceMinRadius: 2, floatingIceMaxRadius: 6 },
+  moderate: { icebergCount: 35, minRadius: 15, maxRadius: 40, minHeight: 15, maxHeight: 35, minSpawnDist: 500, maxSpawnDist: 4500, floatingIceCount: 250, floatingIceMinRadius: 2, floatingIceMaxRadius: 8 },
+  challenging: { icebergCount: 60, minRadius: 20, maxRadius: 50, minHeight: 20, maxHeight: 45, minSpawnDist: 400, maxSpawnDist: 5000, floatingIceCount: 450, floatingIceMinRadius: 3, floatingIceMaxRadius: 10 },
+  extreme: { icebergCount: 100, minRadius: 25, maxRadius: 60, minHeight: 25, maxHeight: 55, minSpawnDist: 300, maxSpawnDist: 5000, floatingIceCount: 750, floatingIceMinRadius: 3, floatingIceMaxRadius: 12 },
 };
 
 export function generateWorld(seed: number, worldSize: number = 10000, difficulty: WorldDifficulty = 'moderate'): WorldData {

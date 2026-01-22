@@ -17,13 +17,12 @@ import { WeatherEffects } from './components/three/WeatherEffects'
 import { DynamicLighting } from './components/three/DynamicLighting'
 import { ProceduralClouds } from './components/three/ProceduralClouds'
 import { EnhancedSky } from './components/three/EnhancedSky'
-import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 import { LandingPage } from './components/ui/LandingPage'
 import { WorldMap } from './components/ui/WorldMap'
-import { EngineControls } from './components/ui/EngineControls'
+import { Dashboard } from './components/ui/Dashboard'
 
 // Stores
 import { useGameStore } from './state/useGameStore'
@@ -81,7 +80,7 @@ export default function App() {
 
           {/* Environment - Enhanced Sky with dynamic sunsets */}
           <EnhancedSky />
-          <fogExp2 attach="fog" args={['#b0c4de', 0.0008]} />
+          <fogExp2 attach="fog" args={['#b0c4de', 0.00015]} />
 
           {/* Ocean */}
           <Ocean />
@@ -111,10 +110,8 @@ export default function App() {
 
       {/* Loading Screen */}
       <Suspense fallback={<LoadingScreen />}>
-        {/* Sail Mode UI (blurred when in build mode) */}
-        <div className={`transition-all duration-300 ${gameMode === 'build' ? 'opacity-0 pointer-events-none' : ''}`}>
-          <HUD />
-        </div>
+        {/* Unified Dashboard - replaces HUD and Engine Controls */}
+        {gameMode === 'sail' && <Dashboard />}
 
         {/* Mode Toggle - Center top */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
@@ -158,11 +155,8 @@ export default function App() {
         <RaceStatus />
         <Leaderboard />
 
-        {/* World Map */}
+        {/* World Map - Now draggable */}
         {gameMode === 'sail' && <WorldMap />}
-
-        {/* Engine Controls (Thrust & Throttle) */}
-        {gameMode === 'sail' && <EngineControls />}
       </Suspense>
     </div>
   )

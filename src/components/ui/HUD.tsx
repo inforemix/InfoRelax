@@ -1,7 +1,7 @@
 import { useGameStore } from '@/state/useGameStore'
 
 export function HUD() {
-  const { wind, energy, energyCredits, player, timeOfDay, battery, boatDamage } = useGameStore()
+  const { wind, energy, energyCredits, player, timeOfDay, battery, boatDamage, isBursting, burstCooldown } = useGameStore()
 
   // Format energy credits
   const formatEC = (ec: number) => {
@@ -69,12 +69,16 @@ export function HUD() {
         </div>
 
         {/* Hull Integrity */}
-        <div className="mt-3 pt-3 border-t border-slate-600">
+        <div className={`mt-3 pt-3 border-t border-slate-600 ${
+          boatDamage.hullIntegrity < 50 ? 'bg-red-900/20 -mx-4 px-4 py-2 rounded' : ''
+        }`}>
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-slate-400">Hull</span>
+            <span className="text-slate-400">
+              Hull {boatDamage.hullIntegrity < 50 && '⚠️'}
+            </span>
             <span className={`font-bold ${
               boatDamage.hullIntegrity > 50 ? 'text-green-400' :
-              boatDamage.hullIntegrity > 20 ? 'text-yellow-400' : 'text-red-400'
+              boatDamage.hullIntegrity > 20 ? 'text-yellow-400 animate-pulse' : 'text-red-400 animate-pulse'
             }`}>
               {boatDamage.hullIntegrity.toFixed(0)}%
             </span>
@@ -83,17 +87,47 @@ export function HUD() {
             <div
               className={`h-full transition-all duration-300 ${
                 boatDamage.hullIntegrity > 50 ? 'bg-green-500' :
-                boatDamage.hullIntegrity > 20 ? 'bg-yellow-500' : 'bg-red-500'
+                boatDamage.hullIntegrity > 20 ? 'bg-yellow-500 animate-pulse' : 'bg-red-500 animate-pulse'
               }`}
               style={{ width: `${boatDamage.hullIntegrity}%` }}
             />
           </div>
           {boatDamage.collisionCount > 0 && (
             <div className="text-xs text-red-400 mt-1">
-              Collisions: {boatDamage.collisionCount}
+              💥 Collisions: {boatDamage.collisionCount}
+            </div>
+          )}
+          {boatDamage.hullIntegrity < 50 && (
+            <div className="text-[10px] text-orange-400 mt-1">
+              ⚠️ Repair at dock (20 kWh)
             </div>
           )}
         </div>
+
+        {/* Burst Speed Indicator */}
+        {(isBursting || burstCooldown > 0) && (
+          <div className="mt-3 pt-3 border-t border-slate-600">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-slate-400">Burst</span>
+              <span className={`font-bold ${
+                isBursting ? 'text-orange-400 animate-pulse' : 'text-cyan-400'
+              }`}>
+                {isBursting ? 'ACTIVE!' : `${burstCooldown.toFixed(1)}s`}
+              </span>
+            </div>
+            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  isBursting ? 'bg-orange-500 animate-pulse' : 'bg-cyan-500'
+                }`}
+                style={{ width: `${isBursting ? 100 : (1 - burstCooldown / 5) * 100}%` }}
+              />
+            </div>
+            <div className="text-[10px] text-slate-500 mt-1">
+              {isBursting ? 'Speed boosted +50%!' : 'Ready in ' + burstCooldown.toFixed(1) + 's'}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Center: Wind, Speed & Throttle */}

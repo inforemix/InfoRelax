@@ -278,10 +278,10 @@ export function GerstnerOcean({ size = 500, segments = 256 }: OceanProps) {
           )), 0.0), 256.0);
           waterColor += vec3(1.0) * sparkle * 0.5;
 
-          gl_FragColor = vec4(waterColor, 0.95);
+          gl_FragColor = vec4(waterColor, 1.0);
         }
       `,
-      transparent: true,
+      transparent: false,
       side: THREE.FrontSide,
       depthWrite: true,
       depthTest: true,
@@ -472,10 +472,10 @@ export function SimpleOcean({ size = 500, segments = 128 }: OceanProps) {
           float sparkle = pow(max(dot(viewDir, reflect(-sunDir, vNormal + vec3(sin(uTime * 10.0 + vWorldPosition.x * 5.0) * 0.02))), 0.0), 128.0);
           baseColor += vec3(1.0) * sparkle * 0.3;
 
-          gl_FragColor = vec4(baseColor, 0.92);
+          gl_FragColor = vec4(baseColor, 1.0);
         }
       `,
-      transparent: true,
+      transparent: false,
       side: THREE.FrontSide,
       depthWrite: true,
       depthTest: true,

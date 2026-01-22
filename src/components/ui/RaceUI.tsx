@@ -62,25 +62,14 @@ export function RaceMenu() {
             </>
           ) : (
             <>
-              <h3 className="text-white font-bold text-sm mb-3">SELECT DIFFICULTY</h3>
+              <h3 className="text-white font-bold text-sm mb-3">START RACE</h3>
               <p className="text-orange-300 text-xs mb-3">{race?.name}</p>
-
-              {(['peaceful', 'moderate', 'challenging'] as RaceDifficulty[]).map((diff) => (
-                <button
-                  key={diff}
-                  onClick={() => setDifficulty(diff)}
-                  className={`w-full p-2 mb-2 rounded font-bold text-xs transition-colors ${
-                    difficulty === diff
-                      ? `${difficultyInfo[diff].color} text-white`
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  }`}
-                >
-                  {difficultyInfo[diff].label}
-                  <div className="text-[10px] mt-1 font-normal opacity-80">
-                    Icebergs: {difficultyInfo[diff].icebergs} | Damage: {difficultyInfo[diff].damage}
-                  </div>
-                </button>
-              ))}
+              <p className="text-slate-400 text-xs mb-3">
+                Difficulty based on world: <span className="text-cyan-400 font-bold">{difficulty}</span>
+              </p>
+              <p className="text-slate-500 text-[10px] mb-3">
+                {difficultyInfo[difficulty].icebergs} icebergs | {difficultyInfo[difficulty].damage} damage
+              </p>
 
               <div className="flex gap-2 mt-3">
                 <button
@@ -99,7 +88,7 @@ export function RaceMenu() {
                   }}
                   className="flex-1 p-2 bg-green-500 text-white rounded font-bold text-xs hover:bg-green-400 transition-colors"
                 >
-                  START
+                  START RACE
                 </button>
               </div>
             </>
@@ -262,8 +251,8 @@ export function RaceStatus() {
     <div
       style={{
         position: 'fixed',
-        top: 20,
-        left: 20,
+        top: 350,
+        right: 20,
         background: 'rgba(0, 0, 0, 0.8)',
         border: '2px solid #00ff00',
         borderRadius: 8,
@@ -370,7 +359,7 @@ export function Leaderboard() {
     <div
       style={{
         position: 'fixed',
-        top: 20,
+        top: 650,
         right: 20,
         background: 'rgba(0, 0, 0, 0.8)',
         border: '2px solid #ffaa00',
