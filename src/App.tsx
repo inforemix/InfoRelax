@@ -37,6 +37,7 @@ import { useIcebergCollision } from './hooks/useIcebergCollision'
 export default function App() {
   const { gameMode, setGameMode } = useGameStore()
   const currentRace = useRaceStore((state) => state.currentRace)
+  const isRacing = useRaceStore((state) => state.isRacing)
   const gameStarted = useLandingStore((state) => state.gameStarted)
 
   // Initialize world on mount - only if game has started
@@ -146,13 +147,14 @@ export default function App() {
           >
             Build
           </button>
+          {/* Race button - only show in sail mode when not already racing */}
+          {gameMode === 'sail' && !isRacing && <RaceMenu />}
         </div>
 
         {/* Build Mode UI */}
         {gameMode === 'build' && <BuildMode />}
 
-        {/* Racing UI */}
-        <RaceMenu />
+        {/* Racing UI - Status and Leaderboard */}
         <RaceStatus />
         <Leaderboard />
 
