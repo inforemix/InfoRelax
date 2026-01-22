@@ -6,7 +6,6 @@ import { getSolarMultiplier, getCloudMultiplier, SOLAR_CONSTANT, SOLAR_PANEL_EFF
 export type Weather = 'clear' | 'cloudy' | 'trade-winds' | 'storm' | 'doldrums'
 export type CameraMode = 'third-person' | 'first-person'
 export type GameMode = 'sail' | 'build'
-export type EnvironmentType = 'default' | 'glacier-360'
 
 export interface WindState {
   direction: number    // 0-360 degrees (0 = North)
@@ -56,9 +55,6 @@ interface GameState {
   cameraMode: CameraMode
   gameMode: GameMode
 
-  // Environment
-  environmentType: EnvironmentType  // Toggle between default and glacier-360
-
   // Energy
   energy: EnergyState
   energyCredits: number    // Total EC earned
@@ -89,8 +85,6 @@ interface GameState {
   setCameraMode: (mode: CameraMode) => void
   toggleCameraMode: () => void
   setGameMode: (mode: GameMode) => void
-  setEnvironmentType: (type: EnvironmentType) => void
-  toggleEnvironment: () => void
   updatePlayerPosition: (delta: number, maxSpeed: number, turnRate: number) => void
   updateEnergy: (delta: number) => void
   updateCheckpointDetection: (checkpoints: any[]) => void
@@ -118,7 +112,6 @@ export const useGameStore = create<GameState>()(
 
     cameraMode: 'third-person',
     gameMode: 'sail',
-    environmentType: 'default',
 
     energy: {
       turbineOutput: 0,
@@ -226,18 +219,6 @@ export const useGameStore = create<GameState>()(
     setGameMode: (mode) => {
       set((state) => {
         state.gameMode = mode
-      })
-    },
-
-    setEnvironmentType: (type) => {
-      set((state) => {
-        state.environmentType = type
-      })
-    },
-
-    toggleEnvironment: () => {
-      set((state) => {
-        state.environmentType = state.environmentType === 'default' ? 'glacier-360' : 'default'
       })
     },
 

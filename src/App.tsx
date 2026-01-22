@@ -17,10 +17,8 @@ import { WeatherEffects } from './components/three/WeatherEffects'
 import { DynamicLighting } from './components/three/DynamicLighting'
 import { ProceduralClouds } from './components/three/ProceduralClouds'
 import { EnhancedSky } from './components/three/EnhancedSky'
-import { GlacierEnvironment } from './components/three/GlacierEnvironment'
 import { HUD } from './components/ui/HUD'
 import { BuildMode } from './components/ui/BuildMode'
-import { EnvironmentToggle } from './components/ui/EnvironmentToggle'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 import { RaceMenu, RaceStatus, Leaderboard } from './components/ui/RaceUI'
 import { LandingPage } from './components/ui/LandingPage'
@@ -37,12 +35,10 @@ import { useWorldIntegration } from './hooks/useWorldIntegration'
 import { useIcebergCollision } from './hooks/useIcebergCollision'
 
 export default function App() {
-  const { gameMode, setGameMode, environmentType } = useGameStore()
+  const { gameMode, setGameMode } = useGameStore()
   const currentRace = useRaceStore((state) => state.currentRace)
+  const isRacing = useRaceStore((state) => state.isRacing)
   const gameStarted = useLandingStore((state) => state.gameStarted)
-
-  // Check if we're using the glacier environment
-  const isGlacierEnvironment = environmentType === 'glacier-360'
 
   // Initialize world on mount - only if game has started
   useEffect(() => {
@@ -74,35 +70,21 @@ export default function App() {
         gl={{ antialias: true, alpha: false }}
       >
         <Suspense fallback={null}>
-          {/* Conditional Environment Rendering */}
-          {isGlacierEnvironment ? (
-            <>
-              {/* Glacier Environment with 360 panorama and arctic water */}
-              <GlacierEnvironment
-                panoramaUrl="/assets/glaciers.png"
-                waterLevel={-0.5}
-                waterSize={10000}
-              />
-            </>
-          ) : (
-            <>
-              {/* Dynamic Lighting System */}
-              <DynamicLighting />
+          {/* Dynamic Lighting System */}
+          <DynamicLighting />
 
-              {/* Weather Visual Effects */}
-              <WeatherEffects />
+          {/* Weather Visual Effects */}
+          <WeatherEffects />
 
-              {/* Procedural Clouds */}
-              <ProceduralClouds />
+          {/* Procedural Clouds */}
+          <ProceduralClouds />
 
-              {/* Environment - Enhanced Sky with dynamic sunsets */}
-              <EnhancedSky />
-              <fogExp2 attach="fog" args={['#b0c4de', 0.0008]} />
+          {/* Environment - Enhanced Sky with dynamic sunsets */}
+          <EnhancedSky />
+          <fogExp2 attach="fog" args={['#b0c4de', 0.0008]} />
 
-              {/* Ocean */}
-              <Ocean />
-            </>
-          )}
+          {/* Ocean */}
+          <Ocean />
 
           {/* World */}
           <Islands />
@@ -165,13 +147,14 @@ export default function App() {
           >
             Build
           </button>
+          {/* Race button - only show in sail mode when not already racing */}
+          {gameMode === 'sail' && !isRacing && <RaceMenu />}
         </div>
 
         {/* Build Mode UI */}
         {gameMode === 'build' && <BuildMode />}
 
-        {/* Racing UI */}
-        <RaceMenu />
+        {/* Racing UI - Status and Leaderboard */}
         <RaceStatus />
         <Leaderboard />
 
@@ -180,9 +163,6 @@ export default function App() {
 
         {/* Engine Controls (Thrust & Throttle) */}
         {gameMode === 'sail' && <EngineControls />}
-
-        {/* Environment Toggle */}
-        {gameMode === 'sail' && <EnvironmentToggle />}
       </Suspense>
     </div>
   )

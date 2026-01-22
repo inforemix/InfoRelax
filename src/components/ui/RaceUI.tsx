@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useRaceStore, RaceDifficulty } from '../../state/useRaceStore'
-import { useGameStore } from '../../state/useGameStore'
 import { getAllRaces } from '../../data/races'
+import { useGameStore } from '../../state/useGameStore'
 
 export function RaceMenu() {
   const isRacing = useRaceStore((state) => state.isRacing)
   const startRace = useRaceStore((state) => state.startRace)
   const difficulty = useRaceStore((state) => state.difficulty)
   const setDifficulty = useRaceStore((state) => state.setDifficulty)
-  const gameMode = useGameStore((state) => state.gameMode)
   const [showRaceSelect, setShowRaceSelect] = useState(false)
   const [selectedRace, setSelectedRace] = useState<string | null>(null)
 
   const races = getAllRaces()
 
-  // Hide race menu in build mode
-  if (gameMode === 'build') return null
+  // Don't show if already racing
+  if (isRacing) return null
 
   const difficultyInfo = {
     peaceful: { label: 'Peaceful', icebergs: 'Few', damage: 'Low', color: 'bg-green-500' },
@@ -23,94 +22,102 @@ export function RaceMenu() {
     challenging: { label: 'Challenging', icebergs: 'Many', damage: 'High', color: 'bg-red-500' },
   }
 
-  if (showRaceSelect && !isRacing) {
+  // Race selection dropdown/modal
+  if (showRaceSelect) {
     const race = selectedRace ? races.find(r => r.id === selectedRace) : null
 
     return (
-      <div className="absolute top-[360px] right-4 z-10 bg-gray-900/90 border-2 border-cyan-500/50 rounded-lg p-4 w-72 pointer-events-auto">
-        {!selectedRace ? (
-          <>
-            <h3 className="text-white font-bold text-sm mb-3">SELECT RACE</h3>
-            {races.map((race) => (
-              <button
-                key={race.id}
-                onClick={() => setSelectedRace(race.id)}
-                className="w-full p-2 mb-2 bg-cyan-500 text-black rounded font-bold text-xs hover:bg-cyan-400 transition-colors"
-              >
-                {race.name}
-                <div className="text-[10px] mt-1 font-normal">
-                  {race.checkpoints.length} Checkpoints - A to B
-                </div>
-              </button>
-            ))}
-            <button
-              onClick={() => setShowRaceSelect(false)}
-              className="w-full p-2 bg-slate-600 text-white rounded text-xs hover:bg-slate-500 transition-colors"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <h3 className="text-white font-bold text-sm mb-3">SELECT DIFFICULTY</h3>
-            <p className="text-cyan-300 text-xs mb-3">{race?.name}</p>
+      <>
+        {/* Button in nav bar */}
+        <button
+          onClick={() => setShowRaceSelect(false)}
+          className="px-6 py-2 rounded-lg font-medium transition-all bg-orange-500 text-white shadow-lg shadow-orange-500/30"
+        >
+          Race
+        </button>
 
-            {(['peaceful', 'moderate', 'challenging'] as RaceDifficulty[]).map((diff) => (
+        {/* Dropdown panel */}
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[60] bg-gray-900/95 border-2 border-orange-500/50 rounded-lg p-4 w-80 pointer-events-auto shadow-xl">
+          {!selectedRace ? (
+            <>
+              <h3 className="text-white font-bold text-sm mb-3">SELECT RACE</h3>
+              {races.map((race) => (
+                <button
+                  key={race.id}
+                  onClick={() => setSelectedRace(race.id)}
+                  className="w-full p-2 mb-2 bg-orange-500 text-white rounded font-bold text-xs hover:bg-orange-400 transition-colors"
+                >
+                  {race.name}
+                  <div className="text-[10px] mt-1 font-normal opacity-80">
+                    {race.checkpoints.length} Checkpoints - A to B
+                  </div>
+                </button>
+              ))}
               <button
-                key={diff}
-                onClick={() => setDifficulty(diff)}
-                className={`w-full p-2 mb-2 rounded font-bold text-xs transition-colors ${
-                  difficulty === diff
-                    ? `${difficultyInfo[diff].color} text-white`
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
+                onClick={() => setShowRaceSelect(false)}
+                className="w-full p-2 bg-slate-600 text-white rounded text-xs hover:bg-slate-500 transition-colors"
               >
-                {difficultyInfo[diff].label}
-                <div className="text-[10px] mt-1 font-normal opacity-80">
-                  Icebergs: {difficultyInfo[diff].icebergs} | Damage: {difficultyInfo[diff].damage}
-                </div>
+                Cancel
               </button>
-            ))}
+            </>
+          ) : (
+            <>
+              <h3 className="text-white font-bold text-sm mb-3">SELECT DIFFICULTY</h3>
+              <p className="text-orange-300 text-xs mb-3">{race?.name}</p>
 
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setSelectedRace(null)}
-                className="flex-1 p-2 bg-slate-600 text-white rounded text-xs hover:bg-slate-500 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={() => {
-                  if (race) {
-                    startRace(race, 'Player')
-                    setShowRaceSelect(false)
-                    setSelectedRace(null)
-                  }
-                }}
-                className="flex-1 p-2 bg-green-500 text-white rounded font-bold text-xs hover:bg-green-400 transition-colors"
-              >
-                START
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+              {(['peaceful', 'moderate', 'challenging'] as RaceDifficulty[]).map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => setDifficulty(diff)}
+                  className={`w-full p-2 mb-2 rounded font-bold text-xs transition-colors ${
+                    difficulty === diff
+                      ? `${difficultyInfo[diff].color} text-white`
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  {difficultyInfo[diff].label}
+                  <div className="text-[10px] mt-1 font-normal opacity-80">
+                    Icebergs: {difficultyInfo[diff].icebergs} | Damage: {difficultyInfo[diff].damage}
+                  </div>
+                </button>
+              ))}
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => setSelectedRace(null)}
+                  className="flex-1 p-2 bg-slate-600 text-white rounded text-xs hover:bg-slate-500 transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    if (race) {
+                      startRace(race, 'Player')
+                      setShowRaceSelect(false)
+                      setSelectedRace(null)
+                    }
+                  }}
+                  className="flex-1 p-2 bg-green-500 text-white rounded font-bold text-xs hover:bg-green-400 transition-colors"
+                >
+                  START
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </>
     )
   }
 
-  if (!isRacing) {
-    return (
-      <button
-        onClick={() => setShowRaceSelect(true)}
-        className="absolute top-[360px] right-4 z-10 bg-cyan-500 text-white border-2 border-cyan-500/50 rounded-lg p-3 hover:bg-cyan-400 transition-all font-bold text-sm shadow-lg pointer-events-auto"
-        title="Start Race"
-      >
-        START RACE
-      </button>
-    )
-  }
-
-  return null
+  // Default: just the button
+  return (
+    <button
+      onClick={() => setShowRaceSelect(true)}
+      className="px-6 py-2 rounded-lg font-medium transition-all bg-slate-800/90 text-slate-300 hover:bg-slate-700"
+    >
+      Race
+    </button>
+  )
 }
 
 export function RaceStatus() {
