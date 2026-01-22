@@ -13,14 +13,21 @@ export function LandingPage() {
   const handleStartGame = () => {
     if (!selectedMap) return
 
-    // Update player name
-    setPlayerName(nameInput || 'Navigator')
+    try {
+      // Update player name
+      setPlayerName(nameInput || 'Navigator')
 
-    // Initialize world with selected map and difficulty
-    initializeWorld(selectedMap.seed, selectedMap.worldSize, selectedMap.difficulty as WorldDifficulty)
+      // Initialize world with selected map and difficulty
+      console.log('Initializing world with:', selectedMap)
+      initializeWorld(selectedMap.seed, selectedMap.worldSize, selectedMap.difficulty as WorldDifficulty)
 
-    // Start the game
-    startGame()
+      // Start the game
+      console.log('Starting game...')
+      startGame()
+    } catch (error) {
+      console.error('Error starting game:', error)
+      alert('Error starting game. Please try again.')
+    }
   }
 
   const getDifficultyColor = (difficulty: string) => {

@@ -66,7 +66,9 @@ export const useLandingStore = create<LandingState>((set) => ({
   },
 
   startGame: () => {
-    set({ gameStarted: true })
+    console.log('Setting gameStarted to true');
+    set({ gameStarted: true });
+    console.log('Game started successfully');
   },
 
   resetToLanding: () => {

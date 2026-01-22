@@ -251,8 +251,8 @@ export function RaceStatus() {
     <div
       style={{
         position: 'fixed',
-        top: 20,
-        left: 20,
+        top: 350,
+        right: 20,
         background: 'rgba(0, 0, 0, 0.8)',
         border: '2px solid #00ff00',
         borderRadius: 8,
@@ -359,7 +359,7 @@ export function Leaderboard() {
     <div
       style={{
         position: 'fixed',
-        top: 20,
+        top: 650,
         right: 20,
         background: 'rgba(0, 0, 0, 0.8)',
         border: '2px solid #ffaa00',

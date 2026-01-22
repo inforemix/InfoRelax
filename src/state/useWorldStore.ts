@@ -24,8 +24,15 @@ export const useWorldStore = create<WorldState>((set) => ({
   dockedAt: null,
 
   initializeWorld: (seed: number, worldSize?: number, difficulty: WorldDifficulty = 'moderate') => {
-    const world = generateWorld(seed, worldSize, difficulty);
-    set({ world });
+    try {
+      console.log('Generating world with seed:', seed, 'size:', worldSize, 'difficulty:', difficulty);
+      const world = generateWorld(seed, worldSize, difficulty);
+      console.log('World generated successfully:', world);
+      set({ world });
+    } catch (error) {
+      console.error('Error generating world:', error);
+      throw error;
+    }
   },
 
   discoverPOI: (poiId: string) => {
