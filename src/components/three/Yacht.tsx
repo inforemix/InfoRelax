@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useControls } from 'leva'
+import { useControls, folder } from 'leva'
 import * as THREE from 'three'
 
 import { useYachtStore } from '@/state/useYachtStore'
@@ -10,13 +10,14 @@ import { useKeyboard } from '@/utils/useKeyboard'
 import { ParametricHull } from './hulls/HullGenerator'
 import { ProceduralHull } from './hulls/ProceduralHull'
 import { CustomTurbine } from './CustomTurbine'
+import { GLBYacht } from './GLBYacht'
 
 export function Yacht() {
   const groupRef = useRef<THREE.Group>(null)
 
   // Get yacht config from store
-  const { currentYacht, stats, proceduralHullConfig } = useYachtStore()
-  const { hull, turbine } = currentYacht
+  const { currentYacht, stats, proceduralHullConfig, setTurbinePosition, setUseGLBModel, setGLBModelScale } = useYachtStore()
+  const { hull, turbine, turbinePosition, useGLBModel, glbModelScale } = currentYacht
 
   // Get game state
   const { wind, player, tick, setThrottle, setSteering, updateCheckpointDetection, activateBurst } = useGameStore()
@@ -30,11 +31,39 @@ export function Yacht() {
   // Track last checkpoint to detect when we pass through
   const lastCheckpointRef = useRef<string | null>(null)
 
-  // Debug controls
-  const { bobAmount, bobSpeed } = useControls('Yacht', {
+  // Debug controls with yacht model selection and turbine positioning
+  const yachtControls = useControls('Yacht', {
     bobAmount: { value: 0.2, min: 0, max: 1 },
     bobSpeed: { value: 1, min: 0, max: 3 },
+    'Model': folder({
+      useGLBModel: { value: useGLBModel, label: 'Use GLB Model' },
+      glbScale: { value: glbModelScale, min: 0.1, max: 5, step: 0.1, label: 'GLB Scale' },
+    }),
+    'Turbine Position': folder({
+      turbineX: { value: turbinePosition.x, min: -5, max: 5, step: 0.1, label: 'X (Left/Right)' },
+      turbineY: { value: turbinePosition.y, min: 0, max: 5, step: 0.1, label: 'Y (Height)' },
+      turbineZ: { value: turbinePosition.z, min: -10, max: 10, step: 0.1, label: 'Z (Front/Back)' },
+    }),
   })
+
+  const { bobAmount, bobSpeed } = yachtControls
+
+  // Sync Leva controls to store
+  useEffect(() => {
+    setUseGLBModel(yachtControls.useGLBModel)
+  }, [yachtControls.useGLBModel, setUseGLBModel])
+
+  useEffect(() => {
+    setGLBModelScale(yachtControls.glbScale)
+  }, [yachtControls.glbScale, setGLBModelScale])
+
+  useEffect(() => {
+    setTurbinePosition({
+      x: yachtControls.turbineX,
+      y: yachtControls.turbineY,
+      z: yachtControls.turbineZ,
+    })
+  }, [yachtControls.turbineX, yachtControls.turbineY, yachtControls.turbineZ, setTurbinePosition])
 
   // Handle keyboard input for throttle and steering
   useEffect(() => {
@@ -128,23 +157,30 @@ export function Yacht() {
   })
 
   // Calculate deck height for turbine placement
-  const deckHeight = hull.draft + 0.4
+  // Adjust based on whether using GLB model or procedural hull
+  const baseDeckHeight = useGLBModel ? 2.0 : hull.draft + 0.4
+  const deckHeight = baseDeckHeight + turbinePosition.y
 
   return (
     <group ref={groupRef}>
-      {/* Hull - use procedural hull if available, otherwise parametric */}
-      {proceduralHullConfig ? (
+      {/* Hull - use GLB model if enabled, otherwise procedural/parametric */}
+      {useGLBModel ? (
+        <GLBYacht scale={glbModelScale} />
+      ) : proceduralHullConfig ? (
         <ProceduralHull config={proceduralHullConfig} />
       ) : (
         <ParametricHull config={hull} />
       )}
 
       {/* Custom Turbine - uses blade profile from Kaleidoscope editor */}
-      <CustomTurbine
-        config={turbine}
-        deckHeight={deckHeight}
-        windSpeed={wind.speed}
-      />
+      {/* Position can be adjusted via turbinePosition */}
+      <group position={[turbinePosition.x, 0, turbinePosition.z]}>
+        <CustomTurbine
+          config={turbine}
+          deckHeight={deckHeight}
+          windSpeed={wind.speed}
+        />
+      </group>
     </group>
   )
 }

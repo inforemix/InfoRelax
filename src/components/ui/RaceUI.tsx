@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useRaceStore, RaceDifficulty } from '../../state/useRaceStore'
+import { useRaceStore } from '../../state/useRaceStore'
 import { getAllRaces } from '../../data/races'
 import { useGameStore } from '../../state/useGameStore'
 
@@ -7,7 +7,6 @@ export function RaceMenu() {
   const isRacing = useRaceStore((state) => state.isRacing)
   const startRace = useRaceStore((state) => state.startRace)
   const difficulty = useRaceStore((state) => state.difficulty)
-  const setDifficulty = useRaceStore((state) => state.setDifficulty)
   const [showRaceSelect, setShowRaceSelect] = useState(false)
   const [selectedRace, setSelectedRace] = useState<string | null>(null)
 
