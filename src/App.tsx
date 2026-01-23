@@ -1,10 +1,9 @@
 import { Canvas } from '@react-three/fiber'
 import { Suspense, useEffect } from 'react'
-import { Leva, useControls } from 'leva'
+import { Leva } from 'leva'
 
 // Components
-import { Ocean, AdvancedOcean, GerstnerOcean } from './components/three/Ocean'
-import { PostProcessing } from './components/three/PostProcessing'
+import { Ocean } from './components/three/Ocean'
 import { Yacht } from './components/three/Yacht'
 import { WindIndicator } from './components/three/WindIndicator'
 import { CameraController } from './components/three/CameraController'
@@ -39,12 +38,6 @@ export default function App() {
   const currentRace = useRaceStore((state) => state.currentRace)
   const isRacing = useRaceStore((state) => state.isRacing)
   const gameStarted = useLandingStore((state) => state.gameStarted)
-
-  // Graphics quality controls
-  const { oceanQuality, enablePostProcessing } = useControls('Graphics', {
-    oceanQuality: { value: 'advanced', options: ['simple', 'gerstner', 'advanced'], label: 'Ocean Quality' },
-    enablePostProcessing: { value: true, label: 'Post Processing' },
-  })
 
   // Initialize world on mount - only if game has started
   useEffect(() => {
@@ -89,13 +82,8 @@ export default function App() {
           <EnhancedSky />
           <fogExp2 attach="fog" args={['#b0c4de', 0.00012]} />
 
-          {/* Ocean - Quality selectable */}
-          {oceanQuality === 'advanced' && <AdvancedOcean />}
-          {oceanQuality === 'gerstner' && <GerstnerOcean />}
-          {oceanQuality === 'simple' && <Ocean />}
-
-          {/* Post-processing effects */}
-          {enablePostProcessing && <PostProcessing />}
+          {/* Ocean */}
+          <Ocean />
 
           {/* World */}
           <Islands />

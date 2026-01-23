@@ -285,56 +285,108 @@ export function WorldMap({ size = 300, minimized = false }: WorldMapProps) {
         cursor: isDragging ? 'grabbing' : 'grab',
       }}
     >
+      {/* Leva-style panel */}
       <div
-        className={`bg-slate-900/95 border border-cyan-500/40 rounded-lg shadow-lg transition-all duration-300 ${
-          isExpanded ? 'p-3' : 'p-2'
-        }`}
+        className="rounded-lg overflow-hidden shadow-xl"
+        style={{
+          backgroundColor: 'rgba(24, 28, 36, 0.95)',
+          fontFamily: 'ui-monospace, SFMono-Regular, SF Mono, Menlo, monospace',
+          minWidth: isExpanded ? '320px' : 'auto',
+        }}
       >
-        {/* Header - Draggable handle */}
+        {/* Header - Leva style */}
         <div
-          className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing"
+          className="flex items-center justify-between px-3 py-2 cursor-grab active:cursor-grabbing"
           onMouseDown={handleMouseDown}
+          style={{
+            backgroundColor: 'rgba(36, 42, 54, 0.9)',
+            borderBottom: isExpanded ? '1px solid rgba(76, 86, 106, 0.3)' : 'none',
+          }}
         >
-          <h3 className="text-cyan-400 font-semibold text-xs tracking-wide select-none">
-            {isExpanded ? '🗺️ NAV MAP (Drag to Move)' : '🗺️'}
-          </h3>
+          <div className="flex items-center gap-2">
+            <span style={{ color: '#8b9cc7', fontSize: '11px', fontWeight: 500 }}>
+              Nav Map
+            </span>
+          </div>
           <button
             onClick={(e) => {
-              e.stopPropagation() // Prevent drag when clicking expand button
+              e.stopPropagation()
               setIsExpanded(!isExpanded)
             }}
-            className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-cyan-500/20"
+            className="flex items-center justify-center w-5 h-5 rounded transition-colors"
+            style={{
+              color: '#6b7a99',
+              fontSize: '14px',
+            }}
           >
-            {isExpanded ? '−' : '+'}
+            {isExpanded ? '▼' : '▶'}
           </button>
         </div>
 
-        {/* Canvas */}
+        {/* Content */}
         {isExpanded && (
-          <>
-            <canvas
-              ref={canvasRef}
-              width={size}
-              height={size}
-              className="border border-cyan-500/20 rounded"
-            />
+          <div className="p-3">
+            {/* Canvas with subtle border */}
+            <div
+              className="rounded overflow-hidden mb-3"
+              style={{
+                border: '1px solid rgba(76, 86, 106, 0.3)',
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                width={size}
+                height={size}
+                style={{ display: 'block' }}
+              />
+            </div>
 
-            {/* Minimal Legend */}
-            <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-slate-400">
-              <div className="flex items-center gap-1">
-                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-green-500"></div>
+            {/* Legend - Leva style */}
+            <div
+              className="flex flex-wrap gap-4 px-1"
+              style={{
+                fontSize: '10px',
+                color: '#8b9cc7',
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-0 h-0"
+                  style={{
+                    borderLeft: '4px solid transparent',
+                    borderRight: '4px solid transparent',
+                    borderBottom: '7px solid #00dd66',
+                  }}
+                />
                 <span>You</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[5px] border-l-transparent border-r-transparent border-b-sky-200"></div>
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-0 h-0"
+                  style={{
+                    borderLeft: '3px solid transparent',
+                    borderRight: '3px solid transparent',
+                    borderBottom: '6px solid #b8d4e8',
+                  }}
+                />
                 <span>Iceberg</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-full bg-slate-600"></div>
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: '#5a5a5a' }}
+                />
                 <span>Island</span>
               </div>
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: '#2a5a7a', border: '1px solid #4a9aba' }}
+                />
+                <span>Marina</span>
+              </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

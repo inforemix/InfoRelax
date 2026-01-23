@@ -146,16 +146,16 @@ function IcebergMesh({ iceberg }: { iceberg: Iceberg }) {
   )
 }
 
-// Floating ice chunk (smaller obstacles)
+// Floating ice chunk (smaller obstacles) - more realistic with higher detail
 function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const { scene } = useThree()
 
   const geometry = useMemo(() => {
-    // Irregular polyhedron shape for floating ice - higher detail
-    const geo = new THREE.IcosahedronGeometry(ice.radius, 1)
+    // Higher subdivision for smoother, more realistic ice - subdivision level 2
+    const geo = new THREE.IcosahedronGeometry(ice.radius, 2)
 
-    // Flatten and deform for ice chunk look
+    // Flatten and deform for natural ice chunk appearance
     const positions = geo.getAttribute('position').array as Float32Array
     const uvs = geo.getAttribute('uv')?.array as Float32Array | undefined
     const seededRandom = (s: number) => {
@@ -163,23 +163,30 @@ function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
       return x - Math.floor(x)
     }
 
+    // Multiple noise frequencies for natural variation
     for (let i = 0; i < positions.length; i += 3) {
-      // Flatten vertically (ice floats low)
-      positions[i + 1] *= 0.35
+      const origY = positions[i + 1]
 
-      // Add irregular deformation with multiple layers
-      const baseX = 0.75 + seededRandom(ice.seed + i) * 0.5
-      const baseZ = 0.75 + seededRandom(ice.seed + i + 500) * 0.5
-      const detailX = (seededRandom(ice.seed + i * 11) - 0.5) * 0.15
-      const detailZ = (seededRandom(ice.seed + i * 17 + 300) - 0.5) * 0.15
+      // Flatten more at water line, keep some height above
+      const flattenFactor = origY > 0 ? 0.45 : 0.25
+      positions[i + 1] *= flattenFactor
 
-      positions[i] *= baseX + detailX
-      positions[i + 2] *= baseZ + detailZ
+      // Multi-frequency deformation for natural look
+      const freq1 = 0.8 + seededRandom(ice.seed + i) * 0.4
+      const freq2 = (seededRandom(ice.seed + i * 7) - 0.5) * 0.2
+      const freq3 = (seededRandom(ice.seed + i * 13) - 0.5) * 0.1
+
+      positions[i] *= freq1 + freq2 + freq3
+      positions[i + 2] *= freq1 + (seededRandom(ice.seed + i + 500) - 0.5) * 0.3
+
+      // Add subtle surface detail
+      positions[i] += (seededRandom(ice.seed + i * 31) - 0.5) * ice.radius * 0.08
+      positions[i + 2] += (seededRandom(ice.seed + i * 37) - 0.5) * ice.radius * 0.08
     }
 
     // Scale UVs if they exist
     if (uvs) {
-      const uvScale = Math.max(1, ice.radius / 4)
+      const uvScale = Math.max(1, ice.radius / 3)
       for (let i = 0; i < uvs.length; i += 2) {
         uvs[i] *= uvScale
         uvs[i + 1] *= uvScale
@@ -194,35 +201,41 @@ function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
     const normalMap = getIceNormalMap()
     const envMap = scene.environment
 
+    // More realistic ice material with subtle blue tint
     return new THREE.MeshPhysicalMaterial({
-      color: 0xe0f4ff,
-      roughness: 0.15,
+      color: 0xd8f0ff,
+      roughness: 0.12,
       metalness: 0.0,
       transparent: true,
-      opacity: 0.88,
-      transmission: 0.15,  // More transmission for smaller ice
-      thickness: 1.0,
+      opacity: 0.92,
+      transmission: 0.2,
+      thickness: 1.5,
       ior: 1.31,
-      clearcoat: 0.4,
-      clearcoatRoughness: 0.15,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.1,
       normalMap: normalMap,
-      normalScale: new THREE.Vector2(0.6, 0.6),
+      normalScale: new THREE.Vector2(0.5, 0.5),
       envMap: envMap,
-      envMapIntensity: 0.5,
+      envMapIntensity: 0.6,
       depthWrite: true,
       depthTest: true,
       side: THREE.FrontSide,
+      // Add subtle sheen for wet ice look
+      sheen: 0.3,
+      sheenRoughness: 0.3,
+      sheenColor: new THREE.Color(0xaaddff),
     })
   }, [scene.environment])
 
-  // Floating/bobbing animation
+  // Gentle floating/bobbing animation
   useFrame((state) => {
     if (meshRef.current) {
       const time = state.clock.elapsedTime
-      meshRef.current.position.y = Math.sin(time * 0.5 + ice.seed) * 0.3 + 0.2
-      meshRef.current.rotation.y += 0.002
-      meshRef.current.rotation.x = Math.sin(time * 0.3 + ice.seed * 0.5) * 0.05
-      meshRef.current.rotation.z = Math.cos(time * 0.4 + ice.seed * 0.3) * 0.05
+      // Slower, more natural bobbing
+      meshRef.current.position.y = Math.sin(time * 0.4 + ice.seed) * 0.15 + 0.1
+      meshRef.current.rotation.y += 0.001
+      meshRef.current.rotation.x = Math.sin(time * 0.25 + ice.seed * 0.5) * 0.03
+      meshRef.current.rotation.z = Math.cos(time * 0.3 + ice.seed * 0.3) * 0.03
     }
   })
 
@@ -231,7 +244,7 @@ function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
       ref={meshRef}
       geometry={geometry}
       material={material}
-      position={[ice.position[0], 0.2, ice.position[1]]}
+      position={[ice.position[0], 0.1, ice.position[1]]}
       rotation={[0, (ice.seed % 360) * Math.PI / 180, 0]}
       castShadow
     />

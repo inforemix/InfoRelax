@@ -37,7 +37,7 @@ export function Yacht() {
     bobSpeed: { value: 1, min: 0, max: 3 },
     'Model': folder({
       useGLBModel: { value: useGLBModel, label: 'Use GLB Model' },
-      glbScale: { value: glbModelScale, min: 0.1, max: 5, step: 0.1, label: 'GLB Scale' },
+      glbScale: { value: glbModelScale, min: 1, max: 20, step: 0.5, label: 'GLB Scale' },
     }),
     'Turbine Position': folder({
       turbineX: { value: turbinePosition.x, min: -5, max: 5, step: 0.1, label: 'X (Left/Right)' },

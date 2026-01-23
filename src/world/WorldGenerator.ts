@@ -80,6 +80,7 @@ export interface WorldData {
 const perlin = new Perlin(0);
 
 // Difficulty settings for iceberg and floating ice generation
+// Increased floating ice counts for more Antarctic feel with smaller pieces spread over the map
 const DIFFICULTY_SETTINGS: Record<WorldDifficulty, {
   icebergCount: number;
   minRadius: number;
@@ -88,14 +89,14 @@ const DIFFICULTY_SETTINGS: Record<WorldDifficulty, {
   maxHeight: number;
   minSpawnDist: number;
   maxSpawnDist: number;
-  floatingIceCount: number;  // Smaller ice chunks
+  floatingIceCount: number;  // Smaller ice chunks - increased for Antarctica feel
   floatingIceMinRadius: number;
   floatingIceMaxRadius: number;
 }> = {
-  peaceful: { icebergCount: 12, minRadius: 12, maxRadius: 30, minHeight: 10, maxHeight: 25, minSpawnDist: 800, maxSpawnDist: 4000, floatingIceCount: 100, floatingIceMinRadius: 2, floatingIceMaxRadius: 6 },
-  moderate: { icebergCount: 35, minRadius: 15, maxRadius: 40, minHeight: 15, maxHeight: 35, minSpawnDist: 500, maxSpawnDist: 4500, floatingIceCount: 250, floatingIceMinRadius: 2, floatingIceMaxRadius: 8 },
-  challenging: { icebergCount: 60, minRadius: 20, maxRadius: 50, minHeight: 20, maxHeight: 45, minSpawnDist: 400, maxSpawnDist: 5000, floatingIceCount: 450, floatingIceMinRadius: 3, floatingIceMaxRadius: 10 },
-  extreme: { icebergCount: 100, minRadius: 25, maxRadius: 60, minHeight: 25, maxHeight: 55, minSpawnDist: 300, maxSpawnDist: 5000, floatingIceCount: 750, floatingIceMinRadius: 3, floatingIceMaxRadius: 12 },
+  peaceful: { icebergCount: 12, minRadius: 12, maxRadius: 30, minHeight: 10, maxHeight: 25, minSpawnDist: 800, maxSpawnDist: 4000, floatingIceCount: 300, floatingIceMinRadius: 1, floatingIceMaxRadius: 4 },
+  moderate: { icebergCount: 35, minRadius: 15, maxRadius: 40, minHeight: 15, maxHeight: 35, minSpawnDist: 500, maxSpawnDist: 4500, floatingIceCount: 600, floatingIceMinRadius: 1, floatingIceMaxRadius: 5 },
+  challenging: { icebergCount: 60, minRadius: 20, maxRadius: 50, minHeight: 20, maxHeight: 45, minSpawnDist: 400, maxSpawnDist: 5000, floatingIceCount: 900, floatingIceMinRadius: 1.5, floatingIceMaxRadius: 6 },
+  extreme: { icebergCount: 100, minRadius: 25, maxRadius: 60, minHeight: 25, maxHeight: 55, minSpawnDist: 300, maxSpawnDist: 5000, floatingIceCount: 1500, floatingIceMinRadius: 1.5, floatingIceMaxRadius: 8 },
 };
 
 export function generateWorld(seed: number, worldSize: number = 10000, difficulty: WorldDifficulty = 'moderate'): WorldData {
@@ -394,29 +395,35 @@ function generateFloatingIce(
   const settings = DIFFICULTY_SETTINGS[difficulty];
 
   let attempts = 0;
-  const maxAttempts = settings.floatingIceCount * 2;
+  const maxAttempts = settings.floatingIceCount * 3;  // More attempts for better distribution
+
+  // Calculate world size for better distribution
+  const worldWidth = bounds.max[0] - bounds.min[0];
+  const worldHeight = bounds.max[1] - bounds.min[1];
 
   while (floatingIce.length < settings.floatingIceCount && attempts < maxAttempts) {
     attempts++;
 
-    // Random position within bounds, closer to center than icebergs
-    const angle = perlin.noise(seed + attempts * 500, 500) * Math.PI * 2;
-    const dist = 200 + Math.abs(perlin.noise(seed + attempts * 501, 501)) * 3500;
+    // Spread ice across entire map using grid-based distribution with noise offset
+    // This creates a more even Antarctic field of ice
+    const gridX = (attempts * 17) % 50;  // Grid position
+    const gridZ = Math.floor((attempts * 17) / 50) % 50;
 
-    let x = Math.cos(angle) * dist;
-    let z = Math.sin(angle) * dist;
+    // Base position from grid
+    let x = bounds.min[0] + (gridX / 50) * worldWidth;
+    let z = bounds.min[1] + (gridZ / 50) * worldHeight;
 
-    // Add more randomness
-    x += perlin.noise(seed + attempts * 502, 502) * 200;
-    z += perlin.noise(seed + attempts * 503, 503) * 200;
+    // Add significant noise offset for natural randomness
+    x += perlin.noise(seed + attempts * 502, 502) * (worldWidth / 25);
+    z += perlin.noise(seed + attempts * 503, 503) * (worldHeight / 25);
 
     // Clamp to bounds
-    x = Math.max(bounds.min[0] + 100, Math.min(bounds.max[0] - 100, x));
-    z = Math.max(bounds.min[1] + 100, Math.min(bounds.max[1] - 100, z));
+    x = Math.max(bounds.min[0] + 50, Math.min(bounds.max[0] - 50, x));
+    z = Math.max(bounds.min[1] + 50, Math.min(bounds.max[1] - 50, z));
 
-    // Skip if too close to marina
+    // Skip if too close to marina (keep spawn area clear)
     const distToMarina = Math.sqrt(x * x + z * z);
-    if (distToMarina < 150) continue;
+    if (distToMarina < 120) continue;
 
     // Skip if too close to any island
     let tooClose = false;
@@ -424,7 +431,7 @@ function generateFloatingIce(
       const dx = x - island.position[0];
       const dz = z - island.position[1];
       const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < island.radius + 30) {
+      if (dist < island.radius + 20) {
         tooClose = true;
         break;
       }
@@ -436,17 +443,19 @@ function generateFloatingIce(
       const dx = x - iceberg.position[0];
       const dz = z - iceberg.position[1];
       const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < iceberg.radius + 20) {
+      if (dist < iceberg.radius + 15) {
         tooClose = true;
         break;
       }
     }
     if (tooClose) continue;
 
-    // Generate floating ice properties
+    // Generate floating ice properties - favor smaller pieces for realism
+    const sizeNoise = Math.abs(perlin.noise(seed + attempts * 504, 504));
+    // Use sqrt to bias toward smaller pieces
+    const sizeFactor = Math.sqrt(sizeNoise);
     const radius = settings.floatingIceMinRadius +
-      Math.abs(perlin.noise(seed + attempts * 504, 504)) *
-      (settings.floatingIceMaxRadius - settings.floatingIceMinRadius);
+      sizeFactor * (settings.floatingIceMaxRadius - settings.floatingIceMinRadius);
 
     floatingIce.push({
       id: `floating-ice-${floatingIce.length}`,

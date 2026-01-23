@@ -180,7 +180,7 @@ const defaultYacht: YachtConfig = {
   },
   deckModules: [],
   useGLBModel: false,
-  glbModelScale: 1.0,
+  glbModelScale: 12.0,
 }
 
 // Store state interface
