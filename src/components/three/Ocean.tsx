@@ -257,7 +257,7 @@ const advancedOceanFragmentShader = `
   }
 `
 
-export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
+export function Ocean({ size = 8000, segments = 256 }: OceanProps) {
   const waterRef = useRef<Water>(null)
   const { scene } = useThree()
   const { setWind, setWeather, player } = useGameStore()
