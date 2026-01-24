@@ -87,6 +87,13 @@ export interface TurbinePosition {
   z: number  // -10 to 10 (front/back)
 }
 
+// Turbine animation configuration
+export interface TurbineAnimation {
+  breathAmplitude: number   // 0 to 0.5 - scale breathing intensity
+  breathFrequency: number   // 0.2 to 3 - breathing speed
+  zCascade: number          // 0 to 2 - z-axis offset cascade per blade
+}
+
 // Full yacht configuration
 export interface YachtConfig {
   id: string
@@ -98,6 +105,8 @@ export interface YachtConfig {
   secondTurbineEnabled: boolean
   secondTurbine: TurbineConfig
   secondTurbineYOffset: number  // Vertical offset from first turbine (negative = below)
+  // Turbine animation
+  turbineAnimation: TurbineAnimation
   solar: SolarConfig
   battery: BatteryConfig
   engine: EngineConfig
@@ -190,6 +199,12 @@ const defaultYacht: YachtConfig = {
     angleBottom: 0,
   },
   secondTurbineYOffset: -3,  // Below the first turbine
+  // Turbine animation defaults
+  turbineAnimation: {
+    breathAmplitude: 0.2,
+    breathFrequency: 0.8,
+    zCascade: 0,
+  },
   solar: {
     deckCoverage: 60,
     turbineIntegrated: true,
@@ -232,6 +247,7 @@ interface YachtState {
   setSecondTurbine: (turbine: Partial<TurbineConfig>) => void
   setSecondTurbineYOffset: (offset: number) => void
   setSecondBladeProfile: (points: BladePoint[]) => void
+  setTurbineAnimation: (animation: Partial<TurbineAnimation>) => void
   setSolar: (solar: Partial<SolarConfig>) => void
   setBattery: (battery: Partial<BatteryConfig>) => void
   setEngine: (tier: EngineTier) => void
@@ -378,7 +394,13 @@ export const useYachtStore = create<YachtState>()(
         state.currentYacht.secondTurbine.bladeProfile = points
       })
     },
-    
+
+    setTurbineAnimation: (animation) => {
+      set((state) => {
+        Object.assign(state.currentYacht.turbineAnimation, animation)
+      })
+    },
+
     setSolar: (solar) => {
       set((state) => {
         Object.assign(state.currentYacht.solar, solar)
