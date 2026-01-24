@@ -37,15 +37,15 @@ export function HUD() {
 
           {/* Compass */}
           <div className="flex flex-col items-center">
-            <div className="relative w-14 h-14">
+            <div className="relative w-16 h-16">
               {/* Compass ring */}
               <div className="absolute inset-0 border-2 border-slate-500 rounded-full" />
 
               {/* Cardinal marks */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 text-[8px] font-bold text-red-400">N</div>
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-0.5 text-[8px] font-bold text-slate-400">S</div>
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0.5 text-[8px] font-bold text-slate-400">W</div>
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0.5 text-[8px] font-bold text-slate-400">E</div>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 text-xs font-bold text-red-400">N</div>
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 text-xs font-bold text-slate-400">S</div>
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 text-xs font-bold text-slate-400">W</div>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 text-xs font-bold text-slate-400">E</div>
 
               {/* Rotating needle */}
               <div
@@ -98,7 +98,7 @@ export function HUD() {
             </div>
           )}
           {boatDamage.hullIntegrity < 50 && (
-            <div className="text-[10px] text-orange-400 mt-1">
+            <div className="text-xs text-orange-400 mt-1">
               ⚠️ Repair at dock (20 kWh)
             </div>
           )}
@@ -123,7 +123,7 @@ export function HUD() {
                 style={{ width: `${isBursting ? 100 : (1 - burstCooldown / 5) * 100}%` }}
               />
             </div>
-            <div className="text-[10px] text-slate-500 mt-1">
+            <div className="text-xs text-slate-500 mt-1">
               {isBursting ? 'Speed boosted +50%!' : 'Ready in ' + burstCooldown.toFixed(1) + 's'}
             </div>
           </div>

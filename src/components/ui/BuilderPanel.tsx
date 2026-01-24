@@ -73,7 +73,7 @@ export function BuilderPanel() {
   const [isSecondKaleidoscopeOpen, setIsSecondKaleidoscopeOpen] = useState(false)
 
   return (
-    <div className="absolute left-4 top-20 bottom-20 w-80 glass rounded-2xl p-4 overflow-y-auto pointer-events-auto">
+    <div className="absolute left-4 top-20 bottom-4 w-80 glass rounded-2xl p-4 overflow-y-auto pointer-events-auto">
       <h2 className="text-xl font-bold text-white mb-4">Yacht Builder</h2>
 
       {/* Stats Summary */}
@@ -301,6 +301,29 @@ export function BuilderPanel() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Size (scales both height and diameter proportionally) */}
+        <div className="mb-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-slate-400">Size (Scale)</span>
+            <span className="text-white">{((turbine.height + turbine.diameter) / 2).toFixed(1)}</span>
+          </div>
+          <input
+            type="range"
+            min="3"
+            max="12"
+            step="0.5"
+            value={(turbine.height + turbine.diameter) / 2}
+            onChange={(e) => {
+              const size = parseFloat(e.target.value)
+              setTurbine({
+                height: size * 1.2,
+                diameter: size * 0.8
+              })
+            }}
+            className="w-full"
+          />
         </div>
 
         {/* Kaleidoscope Editor Button */}
