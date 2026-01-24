@@ -65,7 +65,7 @@ export default function App() {
       {/* 3D Canvas */}
       <Canvas
         shadows
-        camera={{ position: [20, 10, 20], fov: 50, near: 0.1, far: 20000 }}
+        camera={{ position: [20, 10, 20], fov: 50, near: 0.1, far: 8000 }}
         gl={{ antialias: true, alpha: false }}
       >
         <Suspense fallback={null}>
