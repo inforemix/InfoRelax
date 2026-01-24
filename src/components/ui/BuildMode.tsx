@@ -109,8 +109,14 @@ type EditorPanel = 'turbine' | 'hull' | 'energy'
 type EditorMode = 'simple' | 'advanced'
 
 export function BuildMode() {
-  const { currentYacht, setHull, setTurbine, setBladeProfile, setSolar, setBattery, stats, setProceduralHullConfig } = useYachtStore()
-  const { hull, turbine, solar, battery } = currentYacht
+  const {
+    currentYacht, setHull, setTurbine, setBladeProfile, setSolar, setBattery, stats, setProceduralHullConfig,
+    setSecondTurbineEnabled, setSecondTurbineYOffset, setSecondTurbine, setTurbineAnimation
+  } = useYachtStore()
+  const {
+    hull, turbine, solar, battery,
+    secondTurbineEnabled, secondTurbine, secondTurbineYOffset, turbineAnimation
+  } = currentYacht
   const [activePanel, setActivePanel] = useState<EditorPanel>('turbine')
   const [editorMode, setEditorMode] = useState<EditorMode>('simple')
 
@@ -312,6 +318,50 @@ export function BuildMode() {
                   value={turbine.style}
                   onChange={(v) => setTurbine({ style: v })}
                 />
+              </Section>
+
+              <Section title="Second Turbine">
+                <div className="mb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={secondTurbineEnabled}
+                      onChange={(e) => setSecondTurbineEnabled(e.target.checked)}
+                      className="w-3 h-3 accent-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-400">Enable Second Turbine</span>
+                  </label>
+                </div>
+                {secondTurbineEnabled && (
+                  <>
+                    <Slider label="Y Offset" value={secondTurbineYOffset} min={-10} max={10} step={0.5} unit="m" onChange={setSecondTurbineYOffset} />
+                    <Slider label="Height" value={secondTurbine.height} min={3} max={10} step={0.5} unit="m" onChange={(v) => setSecondTurbine({ height: v })} />
+                    <Slider label="Diameter" value={secondTurbine.diameter} min={1} max={6} step={0.5} unit="m" onChange={(v) => setSecondTurbine({ diameter: v })} />
+                    <div className="mb-2">
+                      <span className="text-[10px] text-slate-500 block mb-1">Blades</span>
+                      <div className="flex gap-1 flex-wrap">
+                        {[2, 3, 4, 5, 6].map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => setSecondTurbine({ bladeCount: n })}
+                            className={`min-w-[28px] py-1 rounded text-[10px] font-medium ${
+                              secondTurbine.bladeCount === n ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </Section>
+
+              <Section title="Animation">
+                <Slider label="Breath Amp" value={turbineAnimation.breathAmplitude} min={0} max={0.5} step={0.01} onChange={(v) => setTurbineAnimation({ breathAmplitude: v })} />
+                <Slider label="Breath Freq" value={turbineAnimation.breathFrequency} min={0.2} max={3} step={0.1} onChange={(v) => setTurbineAnimation({ breathFrequency: v })} />
+                <Slider label="Z Cascade" value={turbineAnimation.zCascade} min={0} max={2} step={0.05} onChange={(v) => setTurbineAnimation({ zCascade: v })} />
+                <p className="text-[9px] text-slate-500 mt-1">Z cascade shifts each blade cumulatively</p>
               </Section>
             </>
           )}

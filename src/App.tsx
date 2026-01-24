@@ -80,7 +80,7 @@ export default function App() {
 
           {/* Environment - Enhanced Sky with dynamic sunsets */}
           <EnhancedSky />
-          <fogExp2 attach="fog" args={['#b0c4de', 0.00015]} />
+          <fogExp2 attach="fog" args={['#b0c4de', 0.00012]} />
 
           {/* Ocean */}
           <Ocean />

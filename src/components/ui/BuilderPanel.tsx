@@ -2,6 +2,43 @@ import { useState } from 'react'
 import { useYachtStore, HullType } from '@/state/useYachtStore'
 import { KaleidoscopeModal } from '@/editor'
 
+// Slider component for consistent styling
+function Slider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  unit = '',
+  onChange
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  step: number
+  unit?: string
+  onChange: (value: number) => void
+}) {
+  return (
+    <div className="mb-3">
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-slate-400">{label}</span>
+        <span className="text-white">{value.toFixed(step < 1 ? 2 : 0)}{unit}</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full"
+      />
+    </div>
+  )
+}
+
 // Visual bar indicator component
 function StatBar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
   const percentage = Math.min((value / max) * 100, 100)
@@ -22,12 +59,21 @@ function StatBar({ value, max, color, label }: { value: number; max: number; col
 }
 
 export function BuilderPanel() {
-  const { currentYacht, setHull, setTurbine, setSolar, setBladeProfile, stats } = useYachtStore()
-  const { hull, turbine, solar } = currentYacht
+  const {
+    currentYacht, setHull, setTurbine, setSolar, setBladeProfile, stats,
+    setSecondTurbineEnabled, setSecondTurbineYOffset, setSecondBladeProfile,
+    setTurbineAnimation
+  } = useYachtStore()
+  const {
+    hull, turbine, solar,
+    secondTurbineEnabled, secondTurbine, secondTurbineYOffset,
+    turbineAnimation
+  } = currentYacht
   const [isKaleidoscopeOpen, setIsKaleidoscopeOpen] = useState(false)
+  const [isSecondKaleidoscopeOpen, setIsSecondKaleidoscopeOpen] = useState(false)
 
   return (
-    <div className="absolute left-4 top-20 bottom-20 w-80 glass rounded-2xl p-4 overflow-y-auto pointer-events-auto">
+    <div className="absolute left-4 top-20 bottom-4 w-80 glass rounded-2xl p-4 overflow-y-auto pointer-events-auto">
       <h2 className="text-xl font-bold text-white mb-4">Yacht Builder</h2>
 
       {/* Stats Summary */}
@@ -257,6 +303,29 @@ export function BuilderPanel() {
           </div>
         </div>
 
+        {/* Size (scales both height and diameter proportionally) */}
+        <div className="mb-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-slate-400">Size (Scale)</span>
+            <span className="text-white">{((turbine.height + turbine.diameter) / 2).toFixed(1)}</span>
+          </div>
+          <input
+            type="range"
+            min="3"
+            max="12"
+            step="0.5"
+            value={(turbine.height + turbine.diameter) / 2}
+            onChange={(e) => {
+              const size = parseFloat(e.target.value)
+              setTurbine({
+                height: size * 1.2,
+                diameter: size * 0.8
+              })
+            }}
+            className="w-full"
+          />
+        </div>
+
         {/* Kaleidoscope Editor Button */}
         <button
           onClick={() => setIsKaleidoscopeOpen(true)}
@@ -273,6 +342,96 @@ export function BuilderPanel() {
           currentPoints={turbine.bladeProfile}
           onSave={setBladeProfile}
         />
+      </section>
+
+      {/* Second Turbine Section */}
+      <section className="mb-6">
+        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          🌀 Second Turbine
+        </h3>
+
+        {/* Enable Toggle */}
+        <label className="flex items-center gap-2 cursor-pointer mb-4">
+          <input
+            type="checkbox"
+            checked={secondTurbineEnabled}
+            onChange={(e) => setSecondTurbineEnabled(e.target.checked)}
+            className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-cyan-500 focus:ring-cyan-500"
+          />
+          <span className="text-sm text-slate-300">Enable Second Turbine</span>
+        </label>
+
+        {secondTurbineEnabled && (
+          <>
+            {/* Y Offset */}
+            <Slider
+              label="Y Offset (Height)"
+              value={secondTurbineYOffset}
+              min={-10}
+              max={10}
+              step={0.1}
+              unit="m"
+              onChange={setSecondTurbineYOffset}
+            />
+
+            {/* Second Kaleidoscope Editor Button */}
+            <button
+              onClick={() => setIsSecondKaleidoscopeOpen(true)}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-medium transition-all"
+            >
+              Draw Second Turbine Blade
+            </button>
+
+            {/* Second Kaleidoscope Modal */}
+            <KaleidoscopeModal
+              isOpen={isSecondKaleidoscopeOpen}
+              onClose={() => setIsSecondKaleidoscopeOpen(false)}
+              bladeCount={secondTurbine.bladeCount}
+              currentPoints={secondTurbine.bladeProfile}
+              onSave={setSecondBladeProfile}
+            />
+          </>
+        )}
+      </section>
+
+      {/* Turbine Animation Section */}
+      <section className="mb-6">
+        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          ✨ Turbine Animation
+        </h3>
+
+        {/* Breath Amplitude */}
+        <Slider
+          label="Breath Amplitude"
+          value={turbineAnimation.breathAmplitude}
+          min={0}
+          max={0.5}
+          step={0.01}
+          onChange={(v) => setTurbineAnimation({ breathAmplitude: v })}
+        />
+
+        {/* Breath Frequency */}
+        <Slider
+          label="Breath Frequency"
+          value={turbineAnimation.breathFrequency}
+          min={0.2}
+          max={3}
+          step={0.1}
+          onChange={(v) => setTurbineAnimation({ breathFrequency: v })}
+        />
+
+        {/* Z Cascade */}
+        <Slider
+          label="Z-Axis Cascade"
+          value={turbineAnimation.zCascade}
+          min={0}
+          max={2}
+          step={0.05}
+          onChange={(v) => setTurbineAnimation({ zCascade: v })}
+        />
+        <p className="text-xs text-slate-500 -mt-1 mb-3">
+          Each blade shifts Z by cumulative amount (blade 1: 0, blade 2: value, blade 3: 2×value...)
+        </p>
       </section>
 
       {/* Solar Section */}

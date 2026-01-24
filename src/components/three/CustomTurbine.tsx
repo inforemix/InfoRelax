@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BladePoint, TurbineConfig } from '@/state/useYachtStore'
+import { BladePoint, TurbineConfig, TurbineAnimation } from '@/state/useYachtStore'
 import { interpolateSpline } from '@/editor/SplineUtils'
 import { COLORS } from '@/utils/constants'
 
@@ -9,6 +9,7 @@ interface CustomTurbineProps {
   config: TurbineConfig
   deckHeight: number
   windSpeed: number
+  animation?: TurbineAnimation
 }
 
 const DEFAULT_BLADE_PROFILE: BladePoint[] = [
@@ -126,9 +127,15 @@ function generateBladeMesh(
   return geometry
 }
 
-export function CustomTurbine({ config, deckHeight, windSpeed }: CustomTurbineProps) {
+export function CustomTurbine({ config, deckHeight, windSpeed, animation }: CustomTurbineProps) {
   const groupRef = useRef<THREE.Group>(null)
   const bladesRef = useRef<THREE.Group>(null)
+  const bladeRefs = useRef<(THREE.Mesh | null)[]>([])
+
+  // Default animation values
+  const breathAmplitude = animation?.breathAmplitude ?? 0.2
+  const breathFrequency = animation?.breathFrequency ?? 0.8
+  const zCascade = animation?.zCascade ?? 0
 
   const {
     height, diameter, bladeCount, bladeProfile, material,
@@ -178,27 +185,58 @@ export function CustomTurbine({ config, deckHeight, windSpeed }: CustomTurbinePr
     })
   }, [material])
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
+    const time = state.clock.elapsedTime
+    const baseSpeed = windSpeed * 0.03 * delta * 60
+
+    // Breathing animation with z-cascade
     if (bladesRef.current) {
-      bladesRef.current.rotation.y += windSpeed * 0.03 * delta * 60
+      bladesRef.current.rotation.y += baseSpeed * 0.3
     }
+
+    bladeRefs.current.forEach((blade, i) => {
+      if (blade) {
+        const baseAngle = (i / bladeCount) * Math.PI * 2
+
+        // Breathing: radial scale pulsing like a flower
+        const breathScale = 1 + breathAmplitude * Math.sin(
+          time * breathFrequency + baseAngle
+        )
+
+        // Vertical breathing movement
+        const verticalOffset = breathAmplitude * 0.3 * Math.sin(
+          time * breathFrequency * 0.7 + baseAngle
+        )
+
+        // Z-cascade: each blade shifts by cumulative z offset
+        // Blade 0: 0, Blade 1: zCascade, Blade 2: zCascade*2, etc.
+        const zOffset = i * zCascade
+
+        blade.rotation.set(0, baseAngle, 0)
+        blade.position.set(0, verticalOffset, zOffset)
+        blade.scale.set(breathScale, 1, breathScale)
+      }
+    })
   })
 
   const turbineY = deckHeight + height / 2 + 0.5
 
   return (
     <group ref={groupRef} position={[0, turbineY, 0]}>
+      {/* Central shaft */}
       <mesh castShadow>
         <cylinderGeometry args={[0.12, 0.15, height, 16]} />
         <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.2} />
       </mesh>
 
+      {/* Blades group */}
       <group ref={bladesRef}>
         {Array.from({ length: bladeCount }).map((_, i) => {
           const angle = (i / bladeCount) * Math.PI * 2
           return (
             <mesh
               key={i}
+              ref={(el) => { bladeRefs.current[i] = el }}
               geometry={bladeGeometry}
               material={bladeMaterial}
               rotation={[0, angle, 0]}
@@ -208,16 +246,19 @@ export function CustomTurbine({ config, deckHeight, windSpeed }: CustomTurbinePr
         })}
       </group>
 
+      {/* Top hub cap */}
       <mesh position={[0, height / 2 + 0.08, 0]} castShadow>
         <cylinderGeometry args={[0.18, 0.14, 0.15, 16]} />
         <meshStandardMaterial color={COLORS.cyanAccent} metalness={0.7} roughness={0.3} />
       </mesh>
 
+      {/* Bottom hub */}
       <mesh position={[0, -height / 2 - 0.1, 0]}>
         <cylinderGeometry args={[0.25, 0.3, 0.2, 16]} />
         <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.4} />
       </mesh>
 
+      {/* Reinforcing rings */}
       {[0.25, 0.5, 0.75].map((t, i) => (
         <mesh key={i} position={[0, height * (t - 0.5), 0]}>
           <torusGeometry args={[0.18, 0.02, 8, 24]} />

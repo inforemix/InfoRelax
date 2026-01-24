@@ -26,13 +26,17 @@ export function HUD() {
 
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {/* Top Left: Time, Compass & Weather */}
+      {/* Top Left: Status Panel */}
       <div className="absolute top-4 left-4 glass rounded-xl p-4">
-        <div className="flex items-start gap-4">
+        {/* Status Header */}
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Status</div>
+
+        {/* Time & Compass Row */}
+        <div className="flex items-center gap-4 mb-3 pb-3 border-b border-slate-600">
           {/* Time */}
           <div>
             <div className="text-2xl font-mono text-white">{timeString}</div>
-            <div className="text-sm text-cyan-400">Trade Winds</div>
+            <div className="text-xs text-cyan-400">Trade Winds</div>
           </div>
 
           {/* Compass */}
@@ -42,10 +46,10 @@ export function HUD() {
               <div className="absolute inset-0 border-2 border-slate-500 rounded-full" />
 
               {/* Cardinal marks */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 text-[8px] font-bold text-red-400">N</div>
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-0.5 text-[8px] font-bold text-slate-400">S</div>
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0.5 text-[8px] font-bold text-slate-400">W</div>
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0.5 text-[8px] font-bold text-slate-400">E</div>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 text-xs font-bold text-red-400">N</div>
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-0.5 text-xs font-bold text-slate-400">S</div>
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0.5 text-xs font-bold text-slate-400">W</div>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0.5 text-xs font-bold text-slate-400">E</div>
 
               {/* Rotating needle */}
               <div
@@ -53,10 +57,10 @@ export function HUD() {
                 style={{ transform: `rotate(${heading}deg)` }}
               >
                 {/* North pointer (red) */}
-                <div className="absolute w-1.5 h-5 bg-gradient-to-t from-transparent to-red-500 top-1.5"
+                <div className="absolute w-1.5 h-4 bg-gradient-to-t from-transparent to-red-500 top-1.5"
                      style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
                 {/* South pointer (white) */}
-                <div className="absolute w-1.5 h-5 bg-gradient-to-b from-transparent to-slate-300 bottom-1.5"
+                <div className="absolute w-1.5 h-4 bg-gradient-to-b from-transparent to-slate-300 bottom-1.5"
                      style={{ clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)' }} />
                 {/* Center dot */}
                 <div className="absolute w-2 h-2 bg-slate-400 rounded-full" />
@@ -98,7 +102,7 @@ export function HUD() {
             </div>
           )}
           {boatDamage.hullIntegrity < 50 && (
-            <div className="text-[10px] text-orange-400 mt-1">
+            <div className="text-xs text-orange-400 mt-1">
               ⚠️ Repair at dock (20 kWh)
             </div>
           )}
@@ -123,7 +127,7 @@ export function HUD() {
                 style={{ width: `${isBursting ? 100 : (1 - burstCooldown / 5) * 100}%` }}
               />
             </div>
-            <div className="text-[10px] text-slate-500 mt-1">
+            <div className="text-xs text-slate-500 mt-1">
               {isBursting ? 'Speed boosted +50%!' : 'Ready in ' + burstCooldown.toFixed(1) + 's'}
             </div>
           </div>

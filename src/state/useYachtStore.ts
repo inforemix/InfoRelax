@@ -80,16 +80,39 @@ export interface EngineConfig {
   maxSpeed: number        // knots
 }
 
+// Turbine position offset for placing turbine on boat
+export interface TurbinePosition {
+  x: number  // -5 to 5 (left/right)
+  y: number  // 0 to 5 (height offset)
+  z: number  // -10 to 10 (front/back)
+}
+
+// Turbine animation configuration
+export interface TurbineAnimation {
+  breathAmplitude: number   // 0 to 0.5 - scale breathing intensity
+  breathFrequency: number   // 0.2 to 3 - breathing speed
+  zCascade: number          // 0 to 2 - z-axis offset cascade per blade
+}
+
 // Full yacht configuration
 export interface YachtConfig {
   id: string
   name: string
   hull: HullConfig
   turbine: TurbineConfig
+  turbinePosition: TurbinePosition  // Position offset for turbine
+  // Second turbine (stacked on same axis)
+  secondTurbineEnabled: boolean
+  secondTurbine: TurbineConfig
+  secondTurbineYOffset: number  // Vertical offset from first turbine (negative = below)
+  // Turbine animation
+  turbineAnimation: TurbineAnimation
   solar: SolarConfig
   battery: BatteryConfig
   engine: EngineConfig
   deckModules: string[]  // ['dj-booth', 'cargo', etc.]
+  useGLBModel: boolean   // Whether to use the uploaded GLB model
+  glbModelScale: number  // Scale factor for GLB model
 }
 
 // Calculated stats based on config
@@ -149,6 +172,39 @@ const defaultYacht: YachtConfig = {
     angleMid: 0,
     angleBottom: 0,
   },
+  turbinePosition: {
+    x: 0,
+    y: 0,
+    z: 0,
+  },
+  // Second turbine (below first by default)
+  secondTurbineEnabled: false,
+  secondTurbine: {
+    style: 'ribbon',
+    height: 4,
+    diameter: 4,
+    bladeCount: 4,
+    bladeProfile: [],
+    material: 'chrome',
+    twist: 30,
+    taper: 0.7,
+    sweep: 0,
+    thickness: 0.08,
+    camber: 0,
+    widthTop: 1.0,
+    widthMid: 1.0,
+    widthBottom: 1.0,
+    angleTop: 0,
+    angleMid: 0,
+    angleBottom: 0,
+  },
+  secondTurbineYOffset: -3,  // Below the first turbine
+  // Turbine animation defaults
+  turbineAnimation: {
+    breathAmplitude: 0.2,
+    breathFrequency: 0.8,
+    zCascade: 0,
+  },
   solar: {
     deckCoverage: 60,
     turbineIntegrated: true,
@@ -164,6 +220,8 @@ const defaultYacht: YachtConfig = {
     maxSpeed: 15,
   },
   deckModules: [],
+  useGLBModel: false,
+  glbModelScale: 22.0,
 }
 
 // Store state interface
@@ -183,11 +241,20 @@ interface YachtState {
   // Actions
   setHull: (hull: Partial<HullConfig>) => void
   setTurbine: (turbine: Partial<TurbineConfig>) => void
+  setTurbinePosition: (position: Partial<TurbinePosition>) => void
+  // Second turbine actions
+  setSecondTurbineEnabled: (enabled: boolean) => void
+  setSecondTurbine: (turbine: Partial<TurbineConfig>) => void
+  setSecondTurbineYOffset: (offset: number) => void
+  setSecondBladeProfile: (points: BladePoint[]) => void
+  setTurbineAnimation: (animation: Partial<TurbineAnimation>) => void
   setSolar: (solar: Partial<SolarConfig>) => void
   setBattery: (battery: Partial<BatteryConfig>) => void
   setEngine: (tier: EngineTier) => void
   setBladeProfile: (points: BladePoint[]) => void
   setProceduralHullConfig: (config: ProceduralHullConfig | null) => void
+  setUseGLBModel: (useGLB: boolean) => void
+  setGLBModelScale: (scale: number) => void
   addDeckModule: (module: string) => void
   removeDeckModule: (module: string) => void
   saveYacht: () => void
@@ -295,7 +362,45 @@ export const useYachtStore = create<YachtState>()(
       })
       get().recalculateStats()
     },
-    
+
+    setTurbinePosition: (position) => {
+      set((state) => {
+        Object.assign(state.currentYacht.turbinePosition, position)
+      })
+    },
+
+    // Second turbine actions
+    setSecondTurbineEnabled: (enabled) => {
+      set((state) => {
+        state.currentYacht.secondTurbineEnabled = enabled
+      })
+    },
+
+    setSecondTurbine: (turbine) => {
+      set((state) => {
+        Object.assign(state.currentYacht.secondTurbine, turbine)
+      })
+      get().recalculateStats()
+    },
+
+    setSecondTurbineYOffset: (offset) => {
+      set((state) => {
+        state.currentYacht.secondTurbineYOffset = offset
+      })
+    },
+
+    setSecondBladeProfile: (points) => {
+      set((state) => {
+        state.currentYacht.secondTurbine.bladeProfile = points
+      })
+    },
+
+    setTurbineAnimation: (animation) => {
+      set((state) => {
+        Object.assign(state.currentYacht.turbineAnimation, animation)
+      })
+    },
+
     setSolar: (solar) => {
       set((state) => {
         Object.assign(state.currentYacht.solar, solar)
@@ -312,9 +417,9 @@ export const useYachtStore = create<YachtState>()(
 
     setEngine: (tier) => {
       const tierConfig = {
-        standard: { powerMultiplier: 1, maxSpeed: 15 },
-        performance: { powerMultiplier: 2, maxSpeed: 30 },
-        racing: { powerMultiplier: 3, maxSpeed: 45 },
+        standard: { powerMultiplier: 1, maxSpeed: 25 },
+        performance: { powerMultiplier: 2, maxSpeed: 40 },
+        racing: { powerMultiplier: 3, maxSpeed: 55 },
       }
       set((state) => {
         state.currentYacht.engine = {
@@ -335,6 +440,18 @@ export const useYachtStore = create<YachtState>()(
     setProceduralHullConfig: (config) => {
       set((state) => {
         state.proceduralHullConfig = config
+      })
+    },
+
+    setUseGLBModel: (useGLB) => {
+      set((state) => {
+        state.currentYacht.useGLBModel = useGLB
+      })
+    },
+
+    setGLBModelScale: (scale) => {
+      set((state) => {
+        state.currentYacht.glbModelScale = scale
       })
     },
 

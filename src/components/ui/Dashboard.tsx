@@ -31,7 +31,6 @@ export function Dashboard() {
 
   // Calculate thrust percentage
   const thrustPercentage = (player.throttle / 100) * Math.min(1, player.speed / stats.maxSpeed * 2)
-  const motorPowerKW = energy.motorConsumption
 
   if (isMinimized) {
     return (
