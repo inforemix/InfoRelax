@@ -16,8 +16,15 @@ export function Yacht() {
   const groupRef = useRef<THREE.Group>(null)
 
   // Get yacht config from store
-  const { currentYacht, stats, proceduralHullConfig, setTurbinePosition, setUseGLBModel, setGLBModelScale } = useYachtStore()
-  const { hull, turbine, turbinePosition, useGLBModel, glbModelScale } = currentYacht
+  const {
+    currentYacht, stats, proceduralHullConfig,
+    setTurbinePosition, setUseGLBModel, setGLBModelScale,
+    setSecondTurbineEnabled, setSecondTurbineYOffset
+  } = useYachtStore()
+  const {
+    hull, turbine, turbinePosition, useGLBModel, glbModelScale,
+    secondTurbineEnabled, secondTurbine, secondTurbineYOffset
+  } = currentYacht
 
   // Get game state
   const { wind, player, tick, setThrottle, setSteering, updateCheckpointDetection, activateBurst } = useGameStore()
@@ -44,6 +51,10 @@ export function Yacht() {
       turbineY: { value: turbinePosition.y, min: 0, max: 10, step: 0.1, label: 'Y (Height)' },
       turbineZ: { value: turbinePosition.z, min: -5, max: 10, step: 0.1, label: 'Z (Front/Back)' },
     }),
+    'Second Turbine': folder({
+      secondTurbineEnabled: { value: secondTurbineEnabled, label: 'Enable' },
+      secondTurbineY: { value: secondTurbineYOffset, min: -10, max: 10, step: 0.1, label: 'Y Offset' },
+    }),
   })
 
   const { bobAmount, bobSpeed } = yachtControls
@@ -64,6 +75,15 @@ export function Yacht() {
       z: yachtControls.turbineZ,
     })
   }, [yachtControls.turbineX, yachtControls.turbineY, yachtControls.turbineZ, setTurbinePosition])
+
+  // Sync second turbine Leva controls to store
+  useEffect(() => {
+    setSecondTurbineEnabled(yachtControls.secondTurbineEnabled)
+  }, [yachtControls.secondTurbineEnabled, setSecondTurbineEnabled])
+
+  useEffect(() => {
+    setSecondTurbineYOffset(yachtControls.secondTurbineY)
+  }, [yachtControls.secondTurbineY, setSecondTurbineYOffset])
 
   // Handle keyboard input for throttle and steering
   useEffect(() => {
@@ -180,6 +200,15 @@ export function Yacht() {
           deckHeight={deckHeight}
           windSpeed={wind.speed}
         />
+
+        {/* Second Turbine - positioned below the first on same axis */}
+        {secondTurbineEnabled && (
+          <CustomTurbine
+            config={secondTurbine}
+            deckHeight={deckHeight + secondTurbineYOffset}
+            windSpeed={wind.speed}
+          />
+        )}
       </group>
     </group>
   )

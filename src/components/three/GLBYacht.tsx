@@ -38,7 +38,7 @@ export function GLBYacht({ scale = 1.0 }: GLBYachtProps) {
       <primitive
         object={scene.clone()}
         scale={[scale, scale, scale]}
-        // Rotate to align with movement direction (bow facing +Z)
+        // Rotate 180° to align bow with forward direction
         rotation={[0, Math.PI, 0]}
       />
     </group>

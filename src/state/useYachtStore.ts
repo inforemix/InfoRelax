@@ -94,6 +94,10 @@ export interface YachtConfig {
   hull: HullConfig
   turbine: TurbineConfig
   turbinePosition: TurbinePosition  // Position offset for turbine
+  // Second turbine (stacked on same axis)
+  secondTurbineEnabled: boolean
+  secondTurbine: TurbineConfig
+  secondTurbineYOffset: number  // Vertical offset from first turbine (negative = below)
   solar: SolarConfig
   battery: BatteryConfig
   engine: EngineConfig
@@ -164,6 +168,28 @@ const defaultYacht: YachtConfig = {
     y: 0,
     z: 0,
   },
+  // Second turbine (below first by default)
+  secondTurbineEnabled: false,
+  secondTurbine: {
+    style: 'ribbon',
+    height: 4,
+    diameter: 4,
+    bladeCount: 4,
+    bladeProfile: [],
+    material: 'chrome',
+    twist: 30,
+    taper: 0.7,
+    sweep: 0,
+    thickness: 0.08,
+    camber: 0,
+    widthTop: 1.0,
+    widthMid: 1.0,
+    widthBottom: 1.0,
+    angleTop: 0,
+    angleMid: 0,
+    angleBottom: 0,
+  },
+  secondTurbineYOffset: -3,  // Below the first turbine
   solar: {
     deckCoverage: 60,
     turbineIntegrated: true,
@@ -201,6 +227,11 @@ interface YachtState {
   setHull: (hull: Partial<HullConfig>) => void
   setTurbine: (turbine: Partial<TurbineConfig>) => void
   setTurbinePosition: (position: Partial<TurbinePosition>) => void
+  // Second turbine actions
+  setSecondTurbineEnabled: (enabled: boolean) => void
+  setSecondTurbine: (turbine: Partial<TurbineConfig>) => void
+  setSecondTurbineYOffset: (offset: number) => void
+  setSecondBladeProfile: (points: BladePoint[]) => void
   setSolar: (solar: Partial<SolarConfig>) => void
   setBattery: (battery: Partial<BatteryConfig>) => void
   setEngine: (tier: EngineTier) => void
@@ -319,6 +350,32 @@ export const useYachtStore = create<YachtState>()(
     setTurbinePosition: (position) => {
       set((state) => {
         Object.assign(state.currentYacht.turbinePosition, position)
+      })
+    },
+
+    // Second turbine actions
+    setSecondTurbineEnabled: (enabled) => {
+      set((state) => {
+        state.currentYacht.secondTurbineEnabled = enabled
+      })
+    },
+
+    setSecondTurbine: (turbine) => {
+      set((state) => {
+        Object.assign(state.currentYacht.secondTurbine, turbine)
+      })
+      get().recalculateStats()
+    },
+
+    setSecondTurbineYOffset: (offset) => {
+      set((state) => {
+        state.currentYacht.secondTurbineYOffset = offset
+      })
+    },
+
+    setSecondBladeProfile: (points) => {
+      set((state) => {
+        state.currentYacht.secondTurbine.bladeProfile = points
       })
     },
     
