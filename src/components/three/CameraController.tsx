@@ -106,19 +106,18 @@ export function CameraController() {
     if (gameMode !== lastGameMode.current) {
       lastGameMode.current = gameMode
       if (gameMode === 'build') {
-        // Position camera for build mode preview (1/3 editor, 2/3 preview)
-        // Camera positioned to center yacht in the right 2/3 of the screen
-        // This means offsetting the target to the right by ~16% of viewport width
+        // Position camera for build mode preview - move viewport to the right
+        // Camera positioned to show yacht from a good angle with space on left for UI
         const buildCameraPos = new THREE.Vector3(
-          yachtPos.x + 8,   // Offset right to center yacht in 2/3 preview area
-          yachtPos.y + 10,  // Elevated for good overview
-          yachtPos.z + 18   // Distance for full yacht visibility
+          yachtPos.x + 15,  // Offset right significantly to move view right
+          yachtPos.y + 12,  // Elevated for good overview
+          yachtPos.z + 25   // Distance for full yacht visibility
         )
         camera.position.copy(buildCameraPos)
         // Target centered on yacht (orbit controls will let user rotate around this)
         const buildTarget = new THREE.Vector3(
           yachtPos.x,
-          yachtPos.y + 1,
+          yachtPos.y + 2,
           yachtPos.z
         )
         controlsRef.current.target.copy(buildTarget)
@@ -184,7 +183,7 @@ export function CameraController() {
         controlsRef.current.update()
       }
 
-      // Apply camera presets (1, 2, 3 keys)
+      // Apply camera presets (1, 2, 3 keys) - only during transition, then stop
       if (cameraPreset.current > 0 && !isInteracting.current) {
         let presetPos: THREE.Vector3
 
@@ -234,10 +233,16 @@ export function CameraController() {
         }
 
         // Smoothly transition to preset position
-        camera.position.lerp(presetPos, 0.05)
+        camera.position.lerp(presetPos, 0.08)
 
         // Update target to yacht center
         controlsRef.current.target.lerp(yachtPos, 0.1)
+
+        // Check if we've reached close enough to the target position - then stop auto-updating
+        const distanceToTarget = camera.position.distanceTo(presetPos)
+        if (distanceToTarget < 1.0) {
+          cameraPreset.current = 0 // Stop applying preset, allow free rotation
+        }
       }
     }
   })
