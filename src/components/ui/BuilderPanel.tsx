@@ -225,22 +225,20 @@ export function BuilderPanel() {
           <label className="text-xs text-slate-400 mb-1 block">Turbine Style</label>
           <div className="grid grid-cols-3 gap-2">
             {([
-              { style: 'helix', label: '🧬 Helix', locked: false },
-              { style: 'infinity', label: '∞ Infinity', locked: true },
-              { style: 'ribbon', label: '🎀 Ribbon', locked: true },
-            ] as const).map(({ style, label, locked }) => (
+              { style: 'helix', label: '🧬 Helix' },
+              { style: 'infinity', label: '∞ Infinity' },
+              { style: 'ribbon', label: '🎀 Ribbon' },
+            ] as const).map(({ style, label }) => (
               <button
                 key={style}
-                onClick={() => !locked && setTurbine({ style })}
+                onClick={() => setTurbine({ style })}
                 className={`px-2 py-2 rounded-lg text-xs transition-all ${
                   turbine.style === style
                     ? 'bg-cyan-500 text-white'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                } ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={locked}
+                }`}
               >
                 {label}
-                {locked && <span className="block text-[10px]">🔒 1k EC</span>}
               </button>
             ))}
           </div>

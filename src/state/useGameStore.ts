@@ -108,7 +108,7 @@ const weatherPresets = WEATHER_PRESETS
 export const useGameStore = create<GameState>()(
   immer((set, get) => ({
     // Initial state
-    timeOfDay: 0.6, // Late afternoon
+    timeOfDay: 0.52, // Late afternoon
     gameTime: 0,
 
     weather: 'trade-winds',

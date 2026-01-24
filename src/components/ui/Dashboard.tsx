@@ -61,7 +61,7 @@ export function Dashboard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-cyan-400 font-bold text-sm tracking-wide">⚓ DASHBOARD</h2>
+              <h2 className="text-cyan-400 font-bold text-base tracking-wide">⚓ DASHBOARD</h2>
               <div className="h-4 w-px bg-cyan-500/30" />
               <div className="text-xs text-slate-400">
                 <span className="text-cyan-400 font-semibold">{player.speed.toFixed(1)}</span> kt •
@@ -80,7 +80,7 @@ export function Dashboard() {
           <div className="grid grid-cols-4 gap-4">
             {/* Column 1: Performance */}
             <div className="space-y-3">
-              <div className="text-[10px] text-cyan-400 font-semibold mb-2 uppercase tracking-wider">Performance</div>
+              <div className="text-xs text-cyan-400 font-bold mb-2 uppercase tracking-wider">Performance</div>
 
               {/* Speed */}
               <GlassCard>
@@ -164,7 +164,7 @@ export function Dashboard() {
 
             {/* Column 2: Energy */}
             <div className="space-y-3">
-              <div className="text-[10px] text-yellow-400 font-semibold mb-2 uppercase tracking-wider">Energy</div>
+              <div className="text-xs text-yellow-400 font-bold mb-2 uppercase tracking-wider">Energy</div>
 
               {/* Battery */}
               <GlassCard highlight={battery.chargePercent < 20}>
@@ -215,7 +215,7 @@ export function Dashboard() {
 
             {/* Column 3: Status */}
             <div className="space-y-3">
-              <div className="text-[10px] text-green-400 font-semibold mb-2 uppercase tracking-wider">Status</div>
+              <div className="text-xs text-green-400 font-bold mb-2 uppercase tracking-wider">Status</div>
 
               {/* Hull Integrity */}
               <GlassCard highlight={boatDamage.hullIntegrity < 50}>
@@ -285,7 +285,7 @@ export function Dashboard() {
 
             {/* Column 4: Controls */}
             <div className="space-y-3">
-              <div className="text-[10px] text-orange-400 font-semibold mb-2 uppercase tracking-wider">Controls</div>
+              <div className="text-xs text-orange-400 font-bold mb-2 uppercase tracking-wider">Controls</div>
 
               {/* Auto-Dock */}
               <button

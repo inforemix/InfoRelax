@@ -173,7 +173,7 @@ const defaultYacht: YachtConfig = {
     angleBottom: 0,
   },
   turbinePosition: {
-    x: 0,
+    x: -5,
     y: 0,
     z: 0,
   },
@@ -198,7 +198,7 @@ const defaultYacht: YachtConfig = {
     angleMid: 0,
     angleBottom: 0,
   },
-  secondTurbineYOffset: -3,  // Below the first turbine
+  secondTurbineYOffset: -1,  // Below the first turbine
   // Turbine animation defaults
   turbineAnimation: {
     breathAmplitude: 0.2,
@@ -221,7 +221,7 @@ const defaultYacht: YachtConfig = {
   },
   deckModules: [],
   useGLBModel: true,
-  glbModelScale: 22.0,
+  glbModelScale: 17,
 }
 
 // Store state interface

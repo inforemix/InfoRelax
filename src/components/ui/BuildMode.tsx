@@ -341,8 +341,8 @@ export function BuildMode() {
                 <ButtonGroup
                   options={[
                     { value: 'helix', label: 'Helix' },
-                    { value: 'infinity', label: 'Infinity', locked: true },
-                    { value: 'ribbon', label: 'Ribbon', locked: true },
+                    { value: 'infinity', label: 'Infinity' },
+                    { value: 'ribbon', label: 'Ribbon' },
                   ]}
                   value={turbine.style}
                   onChange={(v) => setTurbine({ style: v })}
