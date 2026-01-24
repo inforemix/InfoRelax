@@ -121,17 +121,10 @@ export function Yacht() {
     // Bob up and down with waves
     groupRef.current.position.y = Math.sin(time * bobSpeed) * bobAmount
 
-    // Roll based on steering (lean into turns)
-    // Clamp speed ratio to prevent excessive tilting at high speeds
-    const speedRatio = Math.min(player.speed / 15, 1.0) // Normalize to base speed of 15 knots
-    const targetRoll = -player.steering * 0.08 * speedRatio // Reduced from 0.1 to 0.08 for smoother feel
-    groupRef.current.rotation.z = THREE.MathUtils.lerp(
-      groupRef.current.rotation.z,
-      targetRoll + Math.sin(time * bobSpeed * 0.7) * 0.03,
-      0.15 // Increased from 0.1 for faster stabilization
-    )
+    // Keep yacht level - only gentle wave motion, no steering tilt
+    groupRef.current.rotation.z = Math.sin(time * bobSpeed * 0.7) * 0.02
 
-    // Gentle pitch
+    // Gentle pitch from waves
     groupRef.current.rotation.x = Math.sin(time * bobSpeed * 0.5) * 0.02
 
     // Checkpoint detection for racing

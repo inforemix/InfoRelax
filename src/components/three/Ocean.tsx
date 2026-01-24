@@ -323,15 +323,24 @@ export function Ocean({ size = 10000, segments = 256 }: OceanProps) {
     })
 
     waterObj.rotation.x = -Math.PI / 2
-    waterObj.position.y = -0.5 // Slightly below sea level to prevent z-fighting
+    waterObj.position.y = 0 // At sea level
 
     // Fix rendering order and depth to prevent black clipping
     if (waterObj.material) {
       const mat = waterObj.material as THREE.ShaderMaterial
       mat.depthWrite = true
       mat.depthTest = true
-      mat.side = THREE.FrontSide
+      mat.side = THREE.DoubleSide // Render both sides to prevent black areas
+      mat.transparent = false
+
+      // Ensure proper blending
+      if (mat.uniforms && mat.uniforms.alpha) {
+        mat.uniforms.alpha.value = 1.0
+      }
     }
+
+    // Set render order to ensure ocean renders properly
+    waterObj.renderOrder = -1
 
     return waterObj
   }, [waterGeometry, waterNormals, scene.fog, sunColor, waterColor, distortionScale])

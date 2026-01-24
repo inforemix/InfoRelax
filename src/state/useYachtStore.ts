@@ -417,9 +417,9 @@ export const useYachtStore = create<YachtState>()(
 
     setEngine: (tier) => {
       const tierConfig = {
-        standard: { powerMultiplier: 1, maxSpeed: 15 },
-        performance: { powerMultiplier: 2, maxSpeed: 30 },
-        racing: { powerMultiplier: 3, maxSpeed: 45 },
+        standard: { powerMultiplier: 1, maxSpeed: 25 },
+        performance: { powerMultiplier: 2, maxSpeed: 40 },
+        racing: { powerMultiplier: 3, maxSpeed: 55 },
       }
       set((state) => {
         state.currentYacht.engine = {
