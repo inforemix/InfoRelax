@@ -32,6 +32,14 @@ export function Dashboard() {
   // Calculate thrust percentage
   const thrustPercentage = (player.throttle / 100) * Math.min(1, player.speed / stats.maxSpeed * 2)
 
+  // Calculate compass heading (0-360)
+  const heading = (((-player.rotation * 180 / Math.PI) + 180) % 360 + 360) % 360
+  const getCardinalDirection = (deg: number) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+    const index = Math.round(deg / 45) % 8
+    return directions[index]
+  }
+
   if (isMinimized) {
     return (
       <div className="fixed bottom-4 left-4 z-50">
@@ -114,12 +122,42 @@ export function Dashboard() {
                 </div>
               </GlassCard>
 
-              {/* Wind */}
+              {/* Compass with Wind Direction */}
               <GlassCard>
-                <div className="text-xs text-slate-400 mb-1">Wind</div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-cyan-400">{wind.direction.toFixed(0)}°</span>
-                  <span className="text-cyan-400">{wind.speed.toFixed(1)} m/s</span>
+                <div className="flex items-center gap-2">
+                  {/* Compass */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <div className="relative w-12 h-12">
+                      {/* Compass ring */}
+                      <div className="absolute inset-0 border border-slate-500 rounded-full" />
+
+                      {/* Cardinal mark - N only */}
+                      <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-red-400">N</div>
+
+                      {/* Rotating needle */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center"
+                        style={{ transform: `rotate(${heading}deg)` }}
+                      >
+                        {/* North pointer (red) */}
+                        <div className="absolute w-1 h-2.5 bg-gradient-to-t from-transparent to-red-500 top-1"
+                             style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+                        {/* Center dot */}
+                        <div className="absolute w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Wind Info */}
+                  <div className="flex-1">
+                    <div className="text-[9px] text-slate-400 mb-1">Heading</div>
+                    <div className="text-xs text-cyan-400 font-mono mb-1">{heading.toFixed(0)}° {getCardinalDirection(heading)}</div>
+                    <div className="text-[9px] text-slate-400 mb-0.5">Wind</div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-cyan-400">{wind.direction.toFixed(0)}°</span>
+                      <span className="text-cyan-400">{wind.speed.toFixed(1)} m/s</span>
+                    </div>
+                  </div>
                 </div>
               </GlassCard>
             </div>

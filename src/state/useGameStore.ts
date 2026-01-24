@@ -296,15 +296,12 @@ export const useGameStore = create<GameState>()(
         while (angleDiff > Math.PI) angleDiff -= Math.PI * 2
         while (angleDiff < -Math.PI) angleDiff += Math.PI * 2
 
-        // Set steering based on angle difference
+        // Set steering based on angle difference (user can still adjust throttle)
         const steeringAmount = Math.max(-1, Math.min(1, angleDiff * 2))
-
-        // Adjust throttle based on distance (slow down when close)
-        const throttleAmount = distToTarget < 200 ? Math.max(20, (distToTarget / 200) * 50) : 50
 
         set((s) => {
           s.player.steering = steeringAmount
-          s.player.throttle = throttleAmount
+          // Keep user's throttle setting - only update steering for navigation
         })
       }
 

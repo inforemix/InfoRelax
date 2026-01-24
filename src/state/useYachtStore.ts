@@ -215,12 +215,12 @@ const defaultYacht: YachtConfig = {
     currentCharge: 50,
   },
   engine: {
-    tier: 'standard',
-    powerMultiplier: 1,
-    maxSpeed: 15,
+    tier: 'performance',
+    powerMultiplier: 2,
+    maxSpeed: 40,
   },
   deckModules: [],
-  useGLBModel: false,
+  useGLBModel: true,
   glbModelScale: 22.0,
 }
 
