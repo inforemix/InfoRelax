@@ -275,7 +275,7 @@ export function Ocean({ size = 8000, segments = 256 }: OceanProps) {
     waveSpeed,
     waveSize,
   } = useControls('Ocean', {
-    waterColor: { value: '#001e0f', label: 'Water Color' },
+    waterColor: { value: '#0a4a38', label: 'Water Color' },
     sunColor: { value: '#ffffff', label: 'Sun Color' },
     distortionScale: { value: 3.7, min: 0, max: 10, step: 0.1, label: 'Distortion' },
     waveSpeed: { value: 1.0, min: 0.1, max: 3, step: 0.1, label: 'Wave Speed' },

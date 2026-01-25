@@ -118,7 +118,7 @@ export function Marina() {
 
         // Charging cable (simplified)
         const cableGeo = new THREE.CylinderGeometry(0.3, 0.3, 8, 8)
-        const cableMesh = new THREE.Mesh(cableGeo, new THREE.MeshStandardMaterial({ color: 0x000000 }))
+        const cableMesh = new THREE.Mesh(cableGeo, new THREE.MeshStandardMaterial({ color: 0x404040 }))
         cableMesh.position.set(stationX + 3, 7, stationZ)
         cableMesh.rotation.z = Math.PI / 4
         structures.push(cableMesh)

@@ -575,6 +575,9 @@ export const useGameStore = create<GameState>()(
         // Reset burst
         state.isBursting = false
         state.burstCooldown = 0
+
+        // Reset time of day to default afternoon
+        state.timeOfDay = 0.52
       })
     },
 

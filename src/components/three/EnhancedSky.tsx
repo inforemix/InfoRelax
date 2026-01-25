@@ -2,6 +2,7 @@ import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useControls, folder } from 'leva'
+import { useGameStore } from '@/state/useGameStore'
 
 // Atmospheric scattering sky shader
 const atmosphericSkyVertexShader = `
@@ -263,11 +264,9 @@ const atmosphericSkyFragmentShader = `
 
 export function EnhancedSky() {
   const meshRef = useRef<THREE.Mesh>(null)
+  const { timeOfDay } = useGameStore()
 
   const skyControls = useControls('Sky', {
-    'Time': folder({
-      timeOfDay: { value: 0.45, min: 0, max: 1, step: 0.01, label: 'Time of Day' },
-    }),
     'Atmosphere': folder({
       skyBrightness: { value: 1.0, min: 0, max: 2, step: 0.1, label: 'Brightness' },
       sunsetIntensity: { value: 1.0, min: 0, max: 2, step: 0.1, label: 'Sunset Intensity' },
@@ -285,7 +284,7 @@ export function EnhancedSky() {
       side: THREE.BackSide,
       depthWrite: false,
       uniforms: {
-        uTimeOfDay: { value: skyControls.timeOfDay },
+        uTimeOfDay: { value: timeOfDay },
         uSkyBrightness: { value: skyControls.skyBrightness },
         uSunsetIntensity: { value: skyControls.sunsetIntensity },
         uCloudiness: { value: skyControls.cloudiness },
@@ -298,11 +297,11 @@ export function EnhancedSky() {
       vertexShader: atmosphericSkyVertexShader,
       fragmentShader: atmosphericSkyFragmentShader,
     })
-  }, [])
+  }, [timeOfDay])
 
   // Cache previous values to detect changes and avoid redundant updates
   const prevValuesRef = useRef({
-    timeOfDay: skyControls.timeOfDay,
+    timeOfDay: timeOfDay,
     skyBrightness: skyControls.skyBrightness,
     sunsetIntensity: skyControls.sunsetIntensity,
     cloudiness: skyControls.cloudiness,
@@ -355,7 +354,7 @@ export function EnhancedSky() {
       material.uniforms.uMieDirectionalG.value = skyControls.mieDirectionalG
       prev.mieDirectionalG = skyControls.mieDirectionalG
     }
-  }, [skyControls.timeOfDay, skyControls.skyBrightness, skyControls.sunsetIntensity,
+  }, [timeOfDay, skyControls.skyBrightness, skyControls.sunsetIntensity,
       skyControls.cloudiness, skyControls.rayleighCoeff, skyControls.mieCoeff, skyControls.mieDirectionalG])
 
   // Only update time every frame for animation
