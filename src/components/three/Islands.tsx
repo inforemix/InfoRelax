@@ -95,7 +95,7 @@ export function Islands() {
               side: THREE.FrontSide,
             })
             const beachMesh = new THREE.Mesh(iceShelfGeometry, iceShelfMaterial)
-            beachMesh.position.set(island.position[0], -0.01, island.position[1])
+            beachMesh.position.set(island.position[0], -2.0, island.position[1])
             beachMesh.receiveShadow = true
 
             // No vegetation on icebergs - they're pure ice and snow

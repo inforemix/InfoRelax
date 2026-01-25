@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useControls, folder } from 'leva'
@@ -300,18 +300,27 @@ export function EnhancedSky() {
     })
   }, [])
 
-  // Update uniforms
-  useFrame((state) => {
-    if (meshRef.current && meshRef.current.material) {
-      const material = meshRef.current.material as THREE.ShaderMaterial
+  // Cache previous values to detect changes and avoid redundant updates
+  const prevValuesRef = useRef({
+    timeOfDay: skyControls.timeOfDay,
+    skyBrightness: skyControls.skyBrightness,
+    sunsetIntensity: skyControls.sunsetIntensity,
+    cloudiness: skyControls.cloudiness,
+    rayleighCoeff: skyControls.rayleighCoeff,
+    mieCoeff: skyControls.mieCoeff,
+    mieDirectionalG: skyControls.mieDirectionalG,
+  })
+
+  // Update only when control values change (not every frame)
+  useEffect(() => {
+    if (!meshRef.current || !meshRef.current.material) return
+    const material = meshRef.current.material as THREE.ShaderMaterial
+    const prev = prevValuesRef.current
+
+    // Only update if values have changed
+    if (skyControls.timeOfDay !== prev.timeOfDay) {
       material.uniforms.uTimeOfDay.value = skyControls.timeOfDay
-      material.uniforms.uSkyBrightness.value = skyControls.skyBrightness
-      material.uniforms.uSunsetIntensity.value = skyControls.sunsetIntensity
-      material.uniforms.uCloudiness.value = skyControls.cloudiness
-      material.uniforms.uRayleighCoeff.value = skyControls.rayleighCoeff
-      material.uniforms.uMieCoeff.value = skyControls.mieCoeff
-      material.uniforms.uMieDirectionalG.value = skyControls.mieDirectionalG
-      material.uniforms.uTime.value = state.clock.elapsedTime
+      prev.timeOfDay = skyControls.timeOfDay
 
       // Update sun position based on time of day
       const sunAngle = (skyControls.timeOfDay - 0.5) * Math.PI
@@ -320,6 +329,40 @@ export function EnhancedSky() {
         Math.sin(sunAngle),
         0.4
       ).normalize()
+    }
+
+    if (skyControls.skyBrightness !== prev.skyBrightness) {
+      material.uniforms.uSkyBrightness.value = skyControls.skyBrightness
+      prev.skyBrightness = skyControls.skyBrightness
+    }
+    if (skyControls.sunsetIntensity !== prev.sunsetIntensity) {
+      material.uniforms.uSunsetIntensity.value = skyControls.sunsetIntensity
+      prev.sunsetIntensity = skyControls.sunsetIntensity
+    }
+    if (skyControls.cloudiness !== prev.cloudiness) {
+      material.uniforms.uCloudiness.value = skyControls.cloudiness
+      prev.cloudiness = skyControls.cloudiness
+    }
+    if (skyControls.rayleighCoeff !== prev.rayleighCoeff) {
+      material.uniforms.uRayleighCoeff.value = skyControls.rayleighCoeff
+      prev.rayleighCoeff = skyControls.rayleighCoeff
+    }
+    if (skyControls.mieCoeff !== prev.mieCoeff) {
+      material.uniforms.uMieCoeff.value = skyControls.mieCoeff
+      prev.mieCoeff = skyControls.mieCoeff
+    }
+    if (skyControls.mieDirectionalG !== prev.mieDirectionalG) {
+      material.uniforms.uMieDirectionalG.value = skyControls.mieDirectionalG
+      prev.mieDirectionalG = skyControls.mieDirectionalG
+    }
+  }, [skyControls.timeOfDay, skyControls.skyBrightness, skyControls.sunsetIntensity,
+      skyControls.cloudiness, skyControls.rayleighCoeff, skyControls.mieCoeff, skyControls.mieDirectionalG])
+
+  // Only update time every frame for animation
+  useFrame((state) => {
+    if (meshRef.current && meshRef.current.material) {
+      const material = meshRef.current.material as THREE.ShaderMaterial
+      material.uniforms.uTime.value = state.clock.elapsedTime
     }
   })
 
