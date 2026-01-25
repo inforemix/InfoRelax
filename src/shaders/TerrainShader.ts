@@ -163,16 +163,16 @@ export const terrainFragmentShader = `
       finalColor = mix(finalColor, snowColor, snowCoverage * snowBlend);
     }
 
-    // Ambient occlusion approximation (darker in crevices)
-    float ao = 1.0 - (slope * 0.3);
+    // Ambient occlusion approximation (darker in crevices) - reduced for better visibility
+    float ao = 1.0 - (slope * 0.15);
     finalColor *= ao;
 
     // Lighting calculations
     vec3 lightDir = normalize(uSunPosition);
     float diffuse = max(dot(normal, lightDir), 0.0);
 
-    // Soft ambient lighting
-    float ambient = 0.3 + 0.2 * (normal.y * 0.5 + 0.5);
+    // Soft ambient lighting - increased minimum for dark terrains
+    float ambient = 0.5 + 0.3 * (normal.y * 0.5 + 0.5);
 
     // Combine lighting
     float lighting = ambient + diffuse * 0.7;
@@ -223,11 +223,11 @@ export function createTerrainMaterial(maxHeight: number, islandType: string): TH
       waterColor = new THREE.Color(0xb8d8e8) // Icy water
       break
     case 'volcanic':
-      sandColor = new THREE.Color(0x4a4a4a) // Dark volcanic sand (brightened from 0x2a2a2a)
-      grassColor = new THREE.Color(0x3a5a3a) // Dark green
-      rockColor = new THREE.Color(0x3a4a5a) // Dark blue-gray rock (brightened from 0x1a1a1a)
+      sandColor = new THREE.Color(0x707070) // Much brighter volcanic sand
+      grassColor = new THREE.Color(0x5a7a5a) // Brighter dark green
+      rockColor = new THREE.Color(0x606a8a) // Brighter blue-gray rock
       snowColor = new THREE.Color(0xe0e0e0) // Gray snow
-      waterColor = new THREE.Color(0x1a3a4a)
+      waterColor = new THREE.Color(0x3a5a6a) // Brighter water
       break
     case 'coral':
       sandColor = new THREE.Color(0xffe4b5) // Coral sand

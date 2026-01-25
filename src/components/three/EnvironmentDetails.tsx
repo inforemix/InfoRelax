@@ -40,7 +40,7 @@ export function EnvironmentDetails() {
           for (let s = 0; s < 3; s++) {
             const subRockGeo = new THREE.DodecahedronGeometry(rockSize * (0.5 + Math.random() * 0.5), 0)
             const rockMaterial = new THREE.MeshStandardMaterial({
-              color: island.type === 'volcanic' ? 0x4a4a4a :
+              color: island.type === 'volcanic' ? 0x707070 :
                      island.type === 'coral' ? 0x8b7355 : 0x6b6b6b,
               roughness: 0.9,
               metalness: 0,
