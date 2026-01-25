@@ -100,6 +100,7 @@ export function Islands() {
             const beachMesh = new THREE.Mesh(iceShelfGeometry, iceShelfMaterial)
             beachMesh.position.set(island.position[0], -2.0, island.position[1])
             beachMesh.receiveShadow = true
+            beachMesh.visible = false // Hide underwater ice shelf - causes black patches in ocean
 
             // No vegetation on icebergs - they're pure ice and snow
             const vegetation: THREE.Mesh[] = []

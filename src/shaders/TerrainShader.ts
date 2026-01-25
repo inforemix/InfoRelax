@@ -223,9 +223,9 @@ export function createTerrainMaterial(maxHeight: number, islandType: string): TH
       waterColor = new THREE.Color(0xb8d8e8) // Icy water
       break
     case 'volcanic':
-      sandColor = new THREE.Color(0x2a2a2a) // Dark volcanic sand
+      sandColor = new THREE.Color(0x4a4a4a) // Dark volcanic sand (brightened from 0x2a2a2a)
       grassColor = new THREE.Color(0x3a5a3a) // Dark green
-      rockColor = new THREE.Color(0x1a1a1a) // Black volcanic rock
+      rockColor = new THREE.Color(0x3a4a5a) // Dark blue-gray rock (brightened from 0x1a1a1a)
       snowColor = new THREE.Color(0xe0e0e0) // Gray snow
       waterColor = new THREE.Color(0x1a3a4a)
       break
