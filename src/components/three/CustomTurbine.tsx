@@ -58,8 +58,25 @@ function generateBladeMesh(
   profile: BladePoint[],
   height: number,
   diameter: number,
-  shapeParams: BladeShapeParams
+  shapeParams: BladeShapeParams,
+  style: 'helix' | 'infinity' | 'ribbon' = 'helix'
 ): THREE.BufferGeometry {
+  // Get radial offset based on style
+  const getRadialOffset = (t: number): number => {
+    const radius = diameter / 2
+    switch (style) {
+      case 'helix':
+        return radius * 0.9
+      case 'ribbon':
+        return radius * (0.4 + 0.5 * Math.sin(t * Math.PI))
+      case 'infinity':
+        // Figure-8 pattern
+        const phase = t * Math.PI * 2
+        return radius * (0.3 + 0.5 * Math.abs(Math.sin(phase)))
+      default:
+        return radius * 0.85
+    }
+  }
   const smoothProfile = interpolateSpline(profile.length > 1 ? profile : DEFAULT_BLADE_PROFILE, 8)
 
   if (smoothProfile.length < 2) {
@@ -81,8 +98,15 @@ function generateBladeMesh(
     const widthMult = getWidthAtHeight(1 - t, shapeParams)
     const taperMult = THREE.MathUtils.lerp(1, shapeParams.taper, 1 - t)
 
+    // Apply style-specific radial offset
+    const styleRadialOffset = getRadialOffset(t)
     const baseRadius = (point.x * diameter) / 2
-    const radius = baseRadius * widthMult * taperMult
+    let radius = baseRadius * widthMult * taperMult
+
+    // Scale radius by style multiplier to create different blade shapes
+    if (style !== 'helix') {
+      radius = radius * (styleRadialOffset / (diameter / 2 * 0.9))
+    }
 
     const twist = t * twistRad
     const sweepOffset = t * Math.tan(sweepRad) * height * 0.1
@@ -138,7 +162,7 @@ export function CustomTurbine({ config, deckHeight, windSpeed, animation }: Cust
   const zCascade = animation?.zCascade ?? 0
 
   const {
-    height, diameter, bladeCount, bladeProfile, material,
+    height, diameter, bladeCount, bladeProfile, material, style,
     twist, taper, sweep, thickness, camber,
     widthTop, widthMid, widthBottom,
     angleTop, angleMid, angleBottom
@@ -163,9 +187,10 @@ export function CustomTurbine({ config, deckHeight, windSpeed, animation }: Cust
       bladeProfile.length > 0 ? bladeProfile : DEFAULT_BLADE_PROFILE,
       height * 0.85,
       diameter,
-      shapeParams
+      shapeParams,
+      style
     )
-  }, [bladeProfile, height, diameter,
+  }, [bladeProfile, height, diameter, style,
       shapeParams.twist, shapeParams.taper, shapeParams.sweep,
       shapeParams.thickness, shapeParams.camber,
       shapeParams.widthTop, shapeParams.widthMid, shapeParams.widthBottom,

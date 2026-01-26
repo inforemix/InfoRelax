@@ -173,7 +173,7 @@ const defaultYacht: YachtConfig = {
     angleBottom: 0,
   },
   turbinePosition: {
-    x: 0,
+    x: -5,
     y: 0,
     z: 0,
   },
@@ -198,7 +198,7 @@ const defaultYacht: YachtConfig = {
     angleMid: 0,
     angleBottom: 0,
   },
-  secondTurbineYOffset: -3,  // Below the first turbine
+  secondTurbineYOffset: -1,  // Below the first turbine
   // Turbine animation defaults
   turbineAnimation: {
     breathAmplitude: 0.2,
@@ -215,13 +215,13 @@ const defaultYacht: YachtConfig = {
     currentCharge: 50,
   },
   engine: {
-    tier: 'standard',
-    powerMultiplier: 1,
-    maxSpeed: 15,
+    tier: 'performance',
+    powerMultiplier: 2,
+    maxSpeed: 40,
   },
   deckModules: [],
-  useGLBModel: false,
-  glbModelScale: 22.0,
+  useGLBModel: true,
+  glbModelScale: 17,
 }
 
 // Store state interface

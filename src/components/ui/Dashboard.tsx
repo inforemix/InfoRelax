@@ -32,6 +32,14 @@ export function Dashboard() {
   // Calculate thrust percentage
   const thrustPercentage = (player.throttle / 100) * Math.min(1, player.speed / stats.maxSpeed * 2)
 
+  // Calculate compass heading (0-360)
+  const heading = (((-player.rotation * 180 / Math.PI) + 180) % 360 + 360) % 360
+  const getCardinalDirection = (deg: number) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+    const index = Math.round(deg / 45) % 8
+    return directions[index]
+  }
+
   if (isMinimized) {
     return (
       <div className="fixed bottom-4 left-4 z-50">
@@ -53,7 +61,7 @@ export function Dashboard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-cyan-400 font-bold text-sm tracking-wide">⚓ DASHBOARD</h2>
+              <h2 className="text-cyan-400 font-bold text-base tracking-wide">⚓ DASHBOARD</h2>
               <div className="h-4 w-px bg-cyan-500/30" />
               <div className="text-xs text-slate-400">
                 <span className="text-cyan-400 font-semibold">{player.speed.toFixed(1)}</span> kt •
@@ -72,7 +80,7 @@ export function Dashboard() {
           <div className="grid grid-cols-4 gap-4">
             {/* Column 1: Performance */}
             <div className="space-y-3">
-              <div className="text-[10px] text-cyan-400 font-semibold mb-2 uppercase tracking-wider">Performance</div>
+              <div className="text-xs text-cyan-400 font-bold mb-2 uppercase tracking-wider">Performance</div>
 
               {/* Speed */}
               <GlassCard>
@@ -114,19 +122,49 @@ export function Dashboard() {
                 </div>
               </GlassCard>
 
-              {/* Wind */}
+              {/* Compass with Wind Direction */}
               <GlassCard>
-                <div className="text-xs text-slate-400 mb-1">Wind</div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-cyan-400">{wind.direction.toFixed(0)}°</span>
-                  <span className="text-cyan-400">{wind.speed.toFixed(1)} m/s</span>
+                <div className="flex items-center gap-2">
+                  {/* Compass */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <div className="relative w-12 h-12">
+                      {/* Compass ring */}
+                      <div className="absolute inset-0 border border-slate-500 rounded-full" />
+
+                      {/* Cardinal mark - N only */}
+                      <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-red-400">N</div>
+
+                      {/* Rotating needle */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center"
+                        style={{ transform: `rotate(${heading}deg)` }}
+                      >
+                        {/* North pointer (red) */}
+                        <div className="absolute w-1 h-2.5 bg-gradient-to-t from-transparent to-red-500 top-1"
+                             style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+                        {/* Center dot */}
+                        <div className="absolute w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Wind Info */}
+                  <div className="flex-1">
+                    <div className="text-[9px] text-slate-400 mb-1">Heading</div>
+                    <div className="text-xs text-cyan-400 font-mono mb-1">{heading.toFixed(0)}° {getCardinalDirection(heading)}</div>
+                    <div className="text-[9px] text-slate-400 mb-0.5">Wind</div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-cyan-400">{wind.direction.toFixed(0)}°</span>
+                      <span className="text-cyan-400">{wind.speed.toFixed(1)} m/s</span>
+                    </div>
+                  </div>
                 </div>
               </GlassCard>
             </div>
 
             {/* Column 2: Energy */}
             <div className="space-y-3">
-              <div className="text-[10px] text-yellow-400 font-semibold mb-2 uppercase tracking-wider">Energy</div>
+              <div className="text-xs text-yellow-400 font-bold mb-2 uppercase tracking-wider">Energy</div>
 
               {/* Battery */}
               <GlassCard highlight={battery.chargePercent < 20}>
@@ -177,7 +215,7 @@ export function Dashboard() {
 
             {/* Column 3: Status */}
             <div className="space-y-3">
-              <div className="text-[10px] text-green-400 font-semibold mb-2 uppercase tracking-wider">Status</div>
+              <div className="text-xs text-green-400 font-bold mb-2 uppercase tracking-wider">Status</div>
 
               {/* Hull Integrity */}
               <GlassCard highlight={boatDamage.hullIntegrity < 50}>
@@ -247,7 +285,7 @@ export function Dashboard() {
 
             {/* Column 4: Controls */}
             <div className="space-y-3">
-              <div className="text-[10px] text-orange-400 font-semibold mb-2 uppercase tracking-wider">Controls</div>
+              <div className="text-xs text-orange-400 font-bold mb-2 uppercase tracking-wider">Controls</div>
 
               {/* Auto-Dock */}
               <button

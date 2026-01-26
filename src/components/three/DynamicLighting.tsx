@@ -64,7 +64,7 @@ export function DynamicLighting() {
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-far={2000}
+        shadow-camera-far={10000}
         shadow-camera-left={-500}
         shadow-camera-right={500}
         shadow-camera-top={500}

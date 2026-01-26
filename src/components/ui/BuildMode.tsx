@@ -111,7 +111,7 @@ type EditorMode = 'simple' | 'advanced'
 export function BuildMode() {
   const {
     currentYacht, setHull, setTurbine, setBladeProfile, setSolar, setBattery, stats, setProceduralHullConfig,
-    setSecondTurbineEnabled, setSecondTurbineYOffset, setSecondTurbine, setTurbineAnimation
+    setSecondTurbineEnabled, setSecondTurbineYOffset, setSecondTurbine, setSecondBladeProfile, setTurbineAnimation
   } = useYachtStore()
   const {
     hull, turbine, solar, battery,
@@ -152,6 +152,10 @@ export function BuildMode() {
   const handleBladeChange = useCallback((points: typeof turbine.bladeProfile) => {
     setBladeProfile(points)
   }, [setBladeProfile])
+
+  const handleSecondBladeChange = useCallback((points: typeof secondTurbine.bladeProfile) => {
+    setSecondBladeProfile(points)
+  }, [setSecondBladeProfile])
 
   // Set/clear procedural hull config based on editor mode and active panel
   useEffect(() => {
@@ -246,14 +250,39 @@ export function BuildMode() {
           {activePanel === 'turbine' && editorMode === 'simple' && (
             <>
               {/* Kaleidoscope Canvas */}
-              <div className="flex justify-center mb-3">
-                <KaleidoscopeCanvas
-                  bladeCount={turbine.bladeCount}
-                  initialPoints={turbine.bladeProfile}
-                  onPointsChange={handleBladeChange}
-                  size={220}
-                />
-              </div>
+              {secondTurbineEnabled ? (
+                <div className="flex gap-2 justify-center mb-3">
+                  {/* First Turbine Editor */}
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] text-cyan-400 font-semibold mb-1">Turbine 1</span>
+                    <KaleidoscopeCanvas
+                      bladeCount={turbine.bladeCount}
+                      initialPoints={turbine.bladeProfile}
+                      onPointsChange={handleBladeChange}
+                      size={180}
+                    />
+                  </div>
+                  {/* Second Turbine Editor */}
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] text-indigo-400 font-semibold mb-1">Turbine 2</span>
+                    <KaleidoscopeCanvas
+                      bladeCount={secondTurbine.bladeCount}
+                      initialPoints={secondTurbine.bladeProfile}
+                      onPointsChange={handleSecondBladeChange}
+                      size={180}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center mb-3">
+                  <KaleidoscopeCanvas
+                    bladeCount={turbine.bladeCount}
+                    initialPoints={turbine.bladeProfile}
+                    onPointsChange={handleBladeChange}
+                    size={220}
+                  />
+                </div>
+              )}
 
               <Section title="Turbine">
                 <Slider label="Height" value={turbine.height} min={5} max={12} step={0.5} unit="m" onChange={(v) => setTurbine({ height: v })} />
@@ -312,8 +341,8 @@ export function BuildMode() {
                 <ButtonGroup
                   options={[
                     { value: 'helix', label: 'Helix' },
-                    { value: 'infinity', label: 'Infinity', locked: true },
-                    { value: 'ribbon', label: 'Ribbon', locked: true },
+                    { value: 'infinity', label: 'Infinity' },
+                    { value: 'ribbon', label: 'Ribbon' },
                   ]}
                   value={turbine.style}
                   onChange={(v) => setTurbine({ style: v })}

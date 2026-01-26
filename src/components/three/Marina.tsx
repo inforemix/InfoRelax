@@ -118,7 +118,7 @@ export function Marina() {
 
         // Charging cable (simplified)
         const cableGeo = new THREE.CylinderGeometry(0.3, 0.3, 8, 8)
-        const cableMesh = new THREE.Mesh(cableGeo, new THREE.MeshStandardMaterial({ color: 0x000000 }))
+        const cableMesh = new THREE.Mesh(cableGeo, new THREE.MeshStandardMaterial({ color: 0x404040 }))
         cableMesh.position.set(stationX + 3, 7, stationZ)
         cableMesh.rotation.z = Math.PI / 4
         structures.push(cableMesh)
@@ -149,22 +149,7 @@ export function Marina() {
         structures.push(mastMesh)
       }
 
-      // ===== DOCKING ZONE INDICATOR =====
-      const zoneGeometry = new THREE.RingGeometry(
-        marina.dockingZoneRadius * 0.95,
-        marina.dockingZoneRadius,
-        64
-      )
-      const zoneMaterial = new THREE.MeshBasicMaterial({
-        color: isDocked ? 0x00ff00 : 0x0099ff,
-        transparent: true,
-        opacity: 0.4,
-        side: THREE.DoubleSide,
-      })
-      const zoneMesh = new THREE.Mesh(zoneGeometry, zoneMaterial)
-      zoneMesh.position.set(centerX, 0.2, centerZ)
-      zoneMesh.rotation.x = -Math.PI / 2
-      structures.push(zoneMesh)
+      // ===== DOCKING ZONE INDICATOR (removed - causing visual artifacts) =====
 
       return { structures, lights }
     } catch (error) {
