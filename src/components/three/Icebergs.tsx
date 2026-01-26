@@ -103,16 +103,13 @@ function IcebergMesh({ iceberg }: { iceberg: Iceberg }) {
     // Get environment map from scene for reflections
     const envMap = scene.environment
 
+    // Opaque ice material - no transparency to prevent ocean z-fighting
     return new THREE.MeshPhysicalMaterial({
       color: 0xc8e8f8,
       roughness: 0.25,
       metalness: 0.0,
-      transparent: true,
-      opacity: 0.92,
-      transmission: 0.1,  // Slight subsurface light transmission
-      thickness: 2.0,     // For transmission
-      ior: 1.31,          // Index of refraction for ice
-      clearcoat: 0.3,     // Glossy ice surface
+      transparent: false,
+      clearcoat: 0.3,
       clearcoatRoughness: 0.2,
       normalMap: normalMap,
       normalScale: new THREE.Vector2(0.8, 0.8),
@@ -121,6 +118,9 @@ function IcebergMesh({ iceberg }: { iceberg: Iceberg }) {
       depthWrite: true,
       depthTest: true,
       side: THREE.FrontSide,
+      polygonOffset: true,
+      polygonOffsetFactor: 1,
+      polygonOffsetUnits: 1,
     })
   }, [scene.environment])
 
@@ -167,9 +167,14 @@ function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
     for (let i = 0; i < positions.length; i += 3) {
       const origY = positions[i + 1]
 
-      // Flatten more at water line, keep some height above
-      const flattenFactor = origY > 0 ? 0.45 : 0.25
+      // Flatten - keep all geometry ABOVE origin (no underwater portion)
+      const flattenFactor = origY > 0 ? 0.45 : 0.15
       positions[i + 1] *= flattenFactor
+
+      // Clamp: no vertex below y=0 to prevent ANY intersection with ocean plane
+      if (positions[i + 1] < 0) {
+        positions[i + 1] = 0
+      }
 
       // Multi-frequency deformation for natural look
       const freq1 = 0.8 + seededRandom(ice.seed + i) * 0.4
@@ -201,16 +206,12 @@ function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
     const normalMap = getIceNormalMap()
     const envMap = scene.environment
 
-    // More realistic ice material with subtle blue tint
+    // Opaque ice material - no transparency to prevent z-fighting with ocean
     return new THREE.MeshPhysicalMaterial({
       color: 0xd8f0ff,
       roughness: 0.12,
       metalness: 0.0,
-      transparent: true,
-      opacity: 0.92,
-      transmission: 0.2,
-      thickness: 1.5,
-      ior: 1.31,
+      transparent: false,
       clearcoat: 0.5,
       clearcoatRoughness: 0.1,
       normalMap: normalMap,
@@ -220,19 +221,21 @@ function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
       depthWrite: true,
       depthTest: true,
       side: THREE.FrontSide,
-      // Add subtle sheen for wet ice look
+      polygonOffset: true,
+      polygonOffsetFactor: 1,
+      polygonOffsetUnits: 1,
       sheen: 0.3,
       sheenRoughness: 0.3,
       sheenColor: new THREE.Color(0xaaddff),
     })
   }, [scene.environment])
 
-  // Gentle floating/bobbing animation
+  // Gentle floating/bobbing animation - kept well above y=0 to avoid ocean z-fighting
   useFrame((state) => {
     if (meshRef.current) {
       const time = state.clock.elapsedTime
-      // Slower, more natural bobbing
-      meshRef.current.position.y = Math.sin(time * 0.4 + ice.seed) * 0.15 + 0.1
+      // Base at y=0.6, bobbing ±0.15 → range [0.45, 0.75] — always above ocean
+      meshRef.current.position.y = Math.sin(time * 0.4 + ice.seed) * 0.15 + 0.6
       meshRef.current.rotation.y += 0.001
       meshRef.current.rotation.x = Math.sin(time * 0.25 + ice.seed * 0.5) * 0.03
       meshRef.current.rotation.z = Math.cos(time * 0.3 + ice.seed * 0.3) * 0.03
@@ -244,7 +247,7 @@ function FloatingIceMesh({ ice }: { ice: FloatingIce }) {
       ref={meshRef}
       geometry={geometry}
       material={material}
-      position={[ice.position[0], 0.1, ice.position[1]]}
+      position={[ice.position[0], 0.6, ice.position[1]]}
       rotation={[0, (ice.seed % 360) * Math.PI / 180, 0]}
       castShadow
     />
