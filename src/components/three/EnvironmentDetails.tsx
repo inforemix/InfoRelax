@@ -30,8 +30,8 @@ export function EnvironmentDetails() {
         const rockZ = island.position[1] + Math.sin(angle) * dist
         const rockY = island.elevation(rockX, rockZ)
 
-        // Only place rocks near water level or on slopes
-        if (rockY < island.height * 0.25) {
+        // Only place rocks on slopes above water - ensure Y > 3 to avoid ocean z-fighting
+        if (rockY > 3 && rockY < island.height * 0.25) {
           const rockSize = 3 + Math.random() * 8
 
           // Create irregular rock shape using multiple spheres
@@ -62,7 +62,9 @@ export function EnvironmentDetails() {
             rockGroup.add(subRock)
           }
 
-          rockGroup.position.set(rockX, rockY - rockSize * 0.3, rockZ)
+          // Ensure rock group stays above water (minimum Y = 2)
+          const rockGroupY = Math.max(2, rockY - rockSize * 0.3)
+          rockGroup.position.set(rockX, rockGroupY, rockZ)
           rockGroup.rotation.y = Math.random() * Math.PI * 2
 
           rocks.push(...rockGroup.children as THREE.Mesh[])
@@ -194,7 +196,7 @@ export function EnvironmentDetails() {
             debrisMesh = new THREE.Mesh(barrelGeo, barrelMat)
         }
 
-        debrisMesh.position.set(x, 0.5, z)
+        debrisMesh.position.set(x, 1.0, z)
         debrisMesh.rotation.y = Math.random() * Math.PI * 2
         debrisMesh.castShadow = true
         debrisMesh.userData = {
@@ -237,7 +239,7 @@ export function EnvironmentDetails() {
     // Animate floating debris bobbing
     environmentMeshes.floatingDebris.forEach((debris) => {
       const data = debris.userData
-      debris.position.y = 0.5 + Math.sin(time * data.bobSpeed + data.bobPhase) * 0.3
+      debris.position.y = 1.0 + Math.sin(time * data.bobSpeed + data.bobPhase) * 0.3
       debris.rotation.y += 0.001
     })
   })

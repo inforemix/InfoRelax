@@ -63,16 +63,6 @@ export function Islands() {
             positionAttribute.needsUpdate = true
             geometry.computeVertexNormals()
 
-            // Add underwater ice shelf by duplicating and extending base
-            const iceShelfGeometry = geometry.clone()
-            const shelfPositions = iceShelfGeometry.getAttribute('position').array as Float32Array
-            for (let i = 0; i < shelfPositions.length; i += 3) {
-              if (shelfPositions[i + 1] < island.height * 0.2) {
-                shelfPositions[i + 1] = Math.min(shelfPositions[i + 1], -5) // Extend underwater
-              }
-            }
-            iceShelfGeometry.computeVertexNormals()
-
             // Create iceberg material with 'iceberg' or 'arctic' type
             const icebergType = island.type === 'volcanic' ? 'volcanic' : 'iceberg'
             const material = createTerrainMaterial(island.height, icebergType)
@@ -83,29 +73,7 @@ export function Islands() {
             mesh.castShadow = true
             mesh.receiveShadow = true
 
-            // Create ice shelf mesh with translucent ice material
-            const iceShelfMaterial = new THREE.MeshStandardMaterial({
-              color: 0xc8e8f0,
-              roughness: 0.1,
-              metalness: 0.1,
-              transparent: true,
-              opacity: 0.8,
-              depthWrite: true,
-              depthTest: true,
-              side: THREE.FrontSide,
-              polygonOffset: true,
-              polygonOffsetFactor: 1,
-              polygonOffsetUnits: 1,
-            })
-            const beachMesh = new THREE.Mesh(iceShelfGeometry, iceShelfMaterial)
-            beachMesh.position.set(island.position[0], -2.0, island.position[1])
-            beachMesh.receiveShadow = true
-            beachMesh.visible = false // Hide underwater ice shelf - causes black patches in ocean
-
-            // No vegetation on icebergs - they're pure ice and snow
-            const vegetation: THREE.Mesh[] = []
-
-            return { mesh, beachMesh, vegetation, island, material }
+            return { mesh, island, material }
           } catch (error) {
             console.error('Error creating island mesh:', island.id, error)
             return null
@@ -113,8 +81,6 @@ export function Islands() {
         })
         .filter((item) => item !== null) as Array<{
           mesh: THREE.Mesh
-          beachMesh: THREE.Mesh
-          vegetation: THREE.Mesh[]
           island: any
           material: THREE.ShaderMaterial
         }>
@@ -135,13 +101,9 @@ export function Islands() {
 
   return (
     <>
-      {islandMeshes.map(({ mesh, beachMesh, vegetation, island }) => (
+      {islandMeshes.map(({ mesh, island }) => (
         <group key={island.id}>
           <primitive object={mesh} />
-          <primitive object={beachMesh} />
-          {vegetation.map((veg, idx) => (
-            <primitive key={`${island.id}-veg-${idx}`} object={veg} />
-          ))}
         </group>
       ))}
     </>
